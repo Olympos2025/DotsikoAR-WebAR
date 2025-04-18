@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <!-- A-Frame core -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <!-- AR.js for location-based AR -->
-  <script src="https://rawcdn.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
-  <!-- Leaflet & Omnivore for KML→GeoJSON -->
+  <!-- AR.js location-based -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <!-- Polygon component for A‑Frame -->
+  <script src="https://unpkg.com/aframe-polygon-component@3.0.0/dist/aframe-polygon-component.min.js"></script>
+  <!-- Leaflet & Omnivore just for reference, but we’ll parse XML manually -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
   <style>
     body { margin:0; overflow:hidden; }
     #fileInput {
@@ -20,20 +21,20 @@
       left: 10px;
       z-index: 999;
       background: rgba(255,255,255,0.8);
-      padding: 5px;
+      padding: 6px;
       border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <!-- File input for user‐uploaded KML -->
-  <input type="file" id="fileInput" accept=".kml" />
+  <!-- Επιλογή πολλαπλών KML -->
+  <input type="file" id="fileInput" accept=".kml" multiple />
 
-  <!-- AR scene -->
+  <!-- AR σκηνή -->
   <a-scene
     embedded
     vr-mode-ui="enabled: false"
-    arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 10;"
+    arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 0; gpsMaxDistance: 20000;"
   >
     <a-camera gps-camera rotation-reader></a-camera>
   </a-scene>
@@ -42,42 +43,121 @@
     document.addEventListener('DOMContentLoaded', () => {
       const sceneEl = document.querySelector('a-scene');
       const fileInput = document.getElementById('fileInput');
+      const maxDistance = 20000; // μέτρα
 
-      // Function to load and render a KML file from a URL or Blob URL
-      function renderKMLfromURL(url) {
-        omnivore.kml(url).on('ready', function() {
-          this.eachLayer(layer => {
-            if (layer.getLatLngs) {
-              // For polygons or polylines, get first ring of coordinates
-              const coordsNested = layer.getLatLngs();
-              const coords = Array.isArray(coordsNested[0]) ? coordsNested[0] : coordsNested;
-              coords.forEach(pt => {
-                const sphere = document.createElement('a-sphere');
-                sphere.setAttribute('gps-entity-place', `latitude: ${pt.lat}; longitude: ${pt.lng};`);
-                sphere.setAttribute('radius', '1');
-                sphere.setAttribute('color', '#FF0000');
-                sphere.setAttribute('opacity', '0.8');
-                sceneEl.appendChild(sphere);
-              });
-            }
-          });
-        });
+      // Υπολογισμός απόστασης (Haversine)
+      function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // ακτίνα Γης σε μέτρα
+        const toRad = deg => deg * Math.PI / 180;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2)**2 +
+                  Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                  Math.sin(dLon/2)**2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
       }
 
-      // 1) Load and render the bundled example KML
-      renderKMLfromURL('thermi.kml');
+      // Προσθήκη σφαίρας (σημείου)
+      function addPoint(lat, lon, alt=0) {
+        const sphere = document.createElement('a-sphere');
+        sphere.setAttribute('gps-entity-place',
+          `latitude: ${lat}; longitude: ${lon}; altitude: ${alt};`
+        );
+        sphere.setAttribute('radius', '2');
+        sphere.setAttribute('color', '#FF0000');
+        sphere.setAttribute('opacity', '0.8');
+        sceneEl.appendChild(sphere);
+      }
 
-      // 2) Handle user‐selected KML file
-      fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const blob = new Blob([reader.result], { type: 'application/vnd.google-earth.kml+xml' });
-          const blobUrl = URL.createObjectURL(blob);
-          renderKMLfromURL(blobUrl);
-        };
-        reader.readAsText(file);
+      // Προσθήκη γραμμής
+      function addLine(lat1, lon1, alt1, lat2, lon2, alt2) {
+        const el = document.createElement('a-entity');
+        el.setAttribute('gps-entity-place',
+          `latitude: ${lat1}; longitude: ${lon1}; altitude: ${alt1};`
+        );
+        el.setAttribute('line', {
+          start: `0 0 0`,
+          end: `${(lon2-lon1)} 0 ${(lat2-lat1)}`,
+          color: '#00FF00'
+        });
+        sceneEl.appendChild(el);
+      }
+
+      // Προσθήκη γεμισμένου πολυγώνου
+      function addPolygon(coords) {
+        // coords: [{lat,lon,alt},…]
+        const poly = document.createElement('a-entity');
+        // Χρησιμοποιούμε το polygon‑component
+        const verts = coords.map(p => `${p.longitude},${p.latitude}`).join(' ');
+        poly.setAttribute('gps-entity-place',
+          `latitude: ${coords[0].latitude}; longitude: ${coords[0].longitude}; altitude: ${coords[0].altitude||0};`
+        );
+        poly.setAttribute('polygon', {
+          vertices: verts,
+          color: '#0000FF',
+          opacity: 0.4
+        });
+        sceneEl.appendChild(poly);
+      }
+
+      // Parsing KML και απόδοση
+      function parseKMLandRender(text) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'application/xml');
+        const placemarks = xml.getElementsByTagName('Placemark');
+
+        // Πρώτα τρέχουμε την τοποθεσία συσκευής
+        navigator.geolocation.getCurrentPosition(pos => {
+          const { latitude: userLat, longitude: userLon } = pos.coords;
+
+          for (let pm of placemarks) {
+            // Ελέγχουμε αν έχουμε Polygon, LineString ή Point
+            const coordsTag = pm.querySelector('Polygon coordinates, LineString coordinates, Point coordinates');
+            if (!coordsTag) continue;
+            const raw = coordsTag.textContent.trim().split(/\s+/);
+            const pts = raw.map(pair => {
+              const [lon, lat, alt=0] = pair.split(',').map(Number);
+              return { latitude: lat, longitude: lon, altitude: alt };
+            });
+
+            // Φιλτράρουμε με μέγιστη απόσταση
+            const dist = getDistance(userLat, userLon, pts[0].latitude, pts[0].longitude);
+            if (dist > maxDistance) continue;
+
+            // Αν είναι Point
+            if (pm.querySelector('Point')) {
+              addPoint(pts[0].latitude, pts[0].longitude, pts[0].altitude);
+            }
+            // Αν είναι LineString
+            else if (pm.querySelector('LineString')) {
+              for (let i=0; i<pts.length-1; i++){
+                addLine(pts[i].latitude, pts[i].longitude, pts[i].altitude,
+                        pts[i+1].latitude, pts[i+1].longitude, pts[i+1].altitude);
+              }
+            }
+            // Αν είναι Polygon
+            else if (pm.querySelector('Polygon')) {
+              addPolygon(pts);
+            }
+          }
+        }, err => console.error(err), { enableHighAccuracy: true });
+      }
+
+      // Φόρτωση bundled KML
+      fetch('thermi.kml')
+        .then(res => res.text())
+        .then(parseKMLandRender)
+        .catch(console.error);
+
+      // Όταν ο χρήστης επιλέγει/ανεβάζει αρχεία
+      fileInput.addEventListener('change', evt => {
+        const files = Array.from(evt.target.files);
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = () => parseKMLandRender(reader.result);
+          reader.readAsText(file);
+        });
       });
     });
   </script>
