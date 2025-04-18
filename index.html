@@ -4,33 +4,80 @@
   <meta charset="utf-8">
   <title>WebAR KML Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <!-- A-Frame core -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <!-- AR.js for location-based AR -->
   <script src="https://rawcdn.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
+  <!-- Leaflet & Omnivore for KML→GeoJSON -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
-  <style> body { margin:0; overflow:hidden; } </style>
+  <style>
+    body { margin:0; overflow:hidden; }
+    #fileInput {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(255,255,255,0.8);
+      padding: 5px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
-  <a-scene embedded vr-mode-ui="enabled: false" arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 10;">
+  <!-- File input for user‐uploaded KML -->
+  <input type="file" id="fileInput" accept=".kml" />
+
+  <!-- AR scene -->
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 10;"
+  >
     <a-camera gps-camera rotation-reader></a-camera>
   </a-scene>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      omnivore.kml('thermi.kml').on('ready', function() {
-        this.eachLayer(layer => {
-          if(layer.getLatLngs) {
-            const coords = layer.getLatLngs()[0];
-            coords.forEach(pt => {
-              const sphere = document.createElement('a-sphere');
-              sphere.setAttribute('gps-entity-place', `latitude: ${pt.lat}; longitude: ${pt.lng};`);
-              sphere.setAttribute('radius', '1');
-              sphere.setAttribute('color', '#FF0000');
-              sphere.setAttribute('opacity', '0.8');
-              document.querySelector('a-scene').appendChild(sphere);
-            });
-          }
+      const sceneEl = document.querySelector('a-scene');
+      const fileInput = document.getElementById('fileInput');
+
+      // Function to load and render a KML file from a URL or Blob URL
+      function renderKMLfromURL(url) {
+        omnivore.kml(url).on('ready', function() {
+          this.eachLayer(layer => {
+            if (layer.getLatLngs) {
+              // For polygons or polylines, get first ring of coordinates
+              const coordsNested = layer.getLatLngs();
+              const coords = Array.isArray(coordsNested[0]) ? coordsNested[0] : coordsNested;
+              coords.forEach(pt => {
+                const sphere = document.createElement('a-sphere');
+                sphere.setAttribute('gps-entity-place', `latitude: ${pt.lat}; longitude: ${pt.lng};`);
+                sphere.setAttribute('radius', '1');
+                sphere.setAttribute('color', '#FF0000');
+                sphere.setAttribute('opacity', '0.8');
+                sceneEl.appendChild(sphere);
+              });
+            }
+          });
         });
+      }
+
+      // 1) Load and render the bundled example KML
+      renderKMLfromURL('thermi.kml');
+
+      // 2) Handle user‐selected KML file
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const blob = new Blob([reader.result], { type: 'application/vnd.google-earth.kml+xml' });
+          const blobUrl = URL.createObjectURL(blob);
+          renderKMLfromURL(blobUrl);
+        };
+        reader.readAsText(file);
       });
     });
   </script>
