@@ -29,8 +29,7 @@
         embedded>
 
         <a-camera gps-camera rotation-reader></a-camera>
-        <a-entity id="kml-container"></a-entity>
-
+        <a-entity id="polygons-container"></a-entity>
     </a-scene>
 
     <script>
@@ -99,7 +98,7 @@
                 container.appendChild(line);
             });
 
-            document.querySelector('#kml-container').appendChild(container);
+            document.querySelector('#polygons-container').appendChild(container);
         });
         
         document.getElementById('loading').style.display = 'none';
