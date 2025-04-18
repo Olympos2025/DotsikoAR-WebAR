@@ -21,6 +21,7 @@
             /* Παράμετροι διεπαφής */
             --panel-border: 2px solid var(--primary);
             --frame-thickness: 30px; /* Πάχος εξωτερικού πλαισίου */
+            --tick-length: 5px;      /* Μήκος γραμμών που προεξέχουν */
             --tick-spacing: 40px;    /* Απόσταση μεταξύ γραμμών συντεταγμένων */
             --sidebar-width: 340px;  /* Πλάτος πλευρικής στήλης */
         }
@@ -40,18 +41,28 @@
             z-index: 9999;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            border: var(--frame-thickness) solid var(--primary);
+            border: var(--frame-thickness) solid rgba(0, 58, 93, 0.7); /* Ημιδιαφανές πλαίσιο */
             box-sizing: border-box;
         }
         
         /* Οριζόντιες γραμμές πάνω */
-        body::after {
-            content: "";
+        .tick-top {
             position: fixed;
-            z-index: 9999;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: var(--frame-thickness);
+            z-index: 10000;
             pointer-events: none;
+        }
+        
+        .tick-top::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--frame-thickness);
             background-image: 
                 repeating-linear-gradient(
                     to right,
@@ -60,36 +71,35 @@
                     rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
                     rgba(255, 255, 255, 0.8) var(--tick-spacing)
                 );
-            background-size: var(--tick-spacing) 100%;
         }
         
-        /* Κάθετες γραμμές αριστερά */
-        .left-ticks {
-            content: "";
-            position: fixed;
-            z-index: 9999;
-            top: 0; left: 0; bottom: 0;
-            width: var(--frame-thickness);
-            pointer-events: none;
-            background-image: 
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-            background-size: 100% var(--tick-spacing);
+        /* Γραμμές που προεξέχουν πάνω */
+        .tick-top .tick-marker {
+            position: absolute;
+            width: 1px;
+            height: var(--tick-length);
+            background-color: white;
+            top: var(--frame-thickness);
         }
         
         /* Οριζόντιες γραμμές κάτω */
-        .bottom-ticks {
-            content: "";
+        .tick-bottom {
             position: fixed;
-            z-index: 9999;
-            bottom: 0; left: 0; right: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
             height: var(--frame-thickness);
+            z-index: 10000;
             pointer-events: none;
+        }
+        
+        .tick-bottom::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--frame-thickness);
             background-image: 
                 repeating-linear-gradient(
                     to right,
@@ -98,17 +108,35 @@
                     rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
                     rgba(255, 255, 255, 0.8) var(--tick-spacing)
                 );
-            background-size: var(--tick-spacing) 100%;
         }
         
-        /* Κάθετες γραμμές δεξιά */
-        .right-ticks {
-            content: "";
+        /* Γραμμές που προεξέχουν κάτω */
+        .tick-bottom .tick-marker {
+            position: absolute;
+            width: 1px;
+            height: var(--tick-length);
+            background-color: white;
+            bottom: var(--frame-thickness);
+        }
+        
+        /* Κάθετες γραμμές αριστερά */
+        .tick-left {
             position: fixed;
-            z-index: 9999;
-            top: 0; right: 0; bottom: 0;
+            top: 0;
+            bottom: 0;
+            left: 0;
             width: var(--frame-thickness);
+            z-index: 10000;
             pointer-events: none;
+        }
+        
+        .tick-left::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: var(--frame-thickness);
             background-image: 
                 repeating-linear-gradient(
                     to bottom,
@@ -117,7 +145,52 @@
                     rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
                     rgba(255, 255, 255, 0.8) var(--tick-spacing)
                 );
-            background-size: 100% var(--tick-spacing);
+        }
+        
+        /* Γραμμές που προεξέχουν αριστερά */
+        .tick-left .tick-marker {
+            position: absolute;
+            height: 1px;
+            width: var(--tick-length);
+            background-color: white;
+            left: var(--frame-thickness);
+        }
+        
+        /* Κάθετες γραμμές δεξιά */
+        .tick-right {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: var(--frame-thickness);
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        .tick-right::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: var(--frame-thickness);
+            background-image: 
+                repeating-linear-gradient(
+                    to bottom,
+                    transparent,
+                    transparent calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
+                );
+        }
+        
+        /* Γραμμές που προεξέχουν δεξιά */
+        .tick-right .tick-marker {
+            position: absolute;
+            height: 1px;
+            width: var(--tick-length);
+            background-color: white;
+            right: var(--frame-thickness);
         }
         
         /* Κουμπί εμφάνισης μενού */
@@ -173,13 +246,52 @@
             padding: 15px;
         }
         
-        #app-name {
-            color: var(--primary);
-            font-weight: bold;
-            font-size: 1.4em;
+        /* Logo MapLens */
+        .app-logo {
+            margin: 0 auto;
             text-align: center;
-            letter-spacing: 1.5px;
-            margin-bottom: 6px;
+            padding-bottom: 15px;
+        }
+        
+        .logo-text {
+            display: inline-block;
+            font-size: 2.2em;
+            font-weight: bold;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .logo-text::before {
+            content: "MapLens";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            opacity: 0.1;
+            -webkit-text-fill-color: var(--primary);
+        }
+        
+        .logo-icon {
+            display: inline-block;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .map-icon {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
         }
         
         #status {
@@ -332,10 +444,42 @@
     </style>
 </head>
 <body>
-    <!-- Στοιχεία για τις γραμμές συντεταγμένων -->
-    <div class="left-ticks"></div>
-    <div class="bottom-ticks"></div>
-    <div class="right-ticks"></div>
+    <!-- Τα πλαίσια με τις γραμμές που προεξέχουν -->
+    <div class="tick-top">
+        <!-- Γραμμές που προεξέχουν από πάνω προς τα κάτω -->
+        <script>
+            for (let i = 0; i <= window.innerWidth; i += 40) {
+                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
+            }
+        </script>
+    </div>
+    
+    <div class="tick-bottom">
+        <!-- Γραμμές που προεξέχουν από κάτω προς τα πάνω -->
+        <script>
+            for (let i = 0; i <= window.innerWidth; i += 40) {
+                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
+            }
+        </script>
+    </div>
+    
+    <div class="tick-left">
+        <!-- Γραμμές που προεξέχουν από αριστερά προς τα δεξιά -->
+        <script>
+            for (let i = 0; i <= window.innerHeight; i += 40) {
+                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
+            }
+        </script>
+    </div>
+    
+    <div class="tick-right">
+        <!-- Γραμμές που προεξέχουν από δεξιά προς τα αριστερά -->
+        <script>
+            for (let i = 0; i <= window.innerHeight; i += 40) {
+                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
+            }
+        </script>
+    </div>
     
     <!-- Κουμπί εμφάνισης μενού -->
     <button id="menu-toggle">☰</button>
@@ -354,7 +498,12 @@
     <!-- Πλευρική στήλη με όλα τα πλαίσια -->
     <div id="sidebar">
         <div class="panel">
-            <div id="app-name">MapLens</div>
+            <div class="app-logo">
+                <span class="logo-icon">
+                    <div class="map-icon">M</div>
+                </span>
+                <span class="logo-text">MapLens</span>
+            </div>
             <div id="status">⌛ Αναμονή GPS...</div>
             <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
             <div id="datetime"></div>
@@ -409,7 +558,47 @@
         const kmlContainer = document.getElementById('kml-container');
         const langEl = document.getElementById('lang-el');
         const langEn = document.getElementById('lang-en');
-        const appName = document.getElementById('app-name');
+
+        // Προσαρμογή των γραμμών βάσει του μεγέθους του παραθύρου
+        window.addEventListener('resize', updateTickMarkers);
+
+        function updateTickMarkers() {
+            const tickTop = document.querySelector('.tick-top');
+            const tickBottom = document.querySelector('.tick-bottom');
+            const tickLeft = document.querySelector('.tick-left');
+            const tickRight = document.querySelector('.tick-right');
+            
+            // Καθαρισμός προηγούμενων δεικτών
+            tickTop.innerHTML = '';
+            tickBottom.innerHTML = '';
+            tickLeft.innerHTML = '';
+            tickRight.innerHTML = '';
+            
+            // Προσθήκη νέων δεικτών βάσει του τρέχοντος μεγέθους παραθύρου
+            for (let i = 0; i <= window.innerWidth; i += 40) {
+                const markerTop = document.createElement('div');
+                markerTop.className = 'tick-marker';
+                markerTop.style.left = i + 'px';
+                tickTop.appendChild(markerTop);
+                
+                const markerBottom = document.createElement('div');
+                markerBottom.className = 'tick-marker';
+                markerBottom.style.left = i + 'px';
+                tickBottom.appendChild(markerBottom);
+            }
+            
+            for (let i = 0; i <= window.innerHeight; i += 40) {
+                const markerLeft = document.createElement('div');
+                markerLeft.className = 'tick-marker';
+                markerLeft.style.top = i + 'px';
+                tickLeft.appendChild(markerLeft);
+                
+                const markerRight = document.createElement('div');
+                markerRight.className = 'tick-marker';
+                markerRight.style.top = i + 'px';
+                tickRight.appendChild(markerRight);
+            }
+        }
 
         // Κείμενα μεταφράσεων
         const translations = {
@@ -823,6 +1012,9 @@
         
         // AR scene initialization and location handling
         document.addEventListener('DOMContentLoaded', () => {
+            // Αρχικοποίηση των δεικτών στα πλαίσια
+            updateTickMarkers();
+            
             const camera = document.querySelector('a-camera');
             camera.addEventListener('gps-camera-update-position', e => {
                 userPosition = e.detail.position;
