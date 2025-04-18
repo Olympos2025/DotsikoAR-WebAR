@@ -9,21 +9,22 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         :root {
-            /* Κύρια παλέτα χρωμάτων */
-            --primary: #003A5D;      /* Σκούρο μπλε */
-            --neutral: #ADADAD;      /* Ανοιχτό γκρι */
-            --background: #FFFFFF;   /* Λευκό */
-            --accent: #4FC3F7;       /* Ζωντανό κυανό */
+            /* Σύγχρονη παλέτα χρωμάτων 2025 */
+            --primary: #4361EE;      /* Ζωντανό μπλε */
+            --secondary: #4CC9F0;    /* Φωτεινό κυανό */
+            --accent: #F72585;       /* Ζωντανό ροζ */
+            --light: #F8F9FA;        /* Ανοιχτό γκρι-λευκό */
+            --dark: #212529;         /* Σκούρο γκρι */
             --success: #2ECC71;      /* Πράσινο επιτυχίας */
             --warning: #F1C40F;      /* Κίτρινο προειδοποίησης */
             --error: #E74C3C;        /* Κόκκινο σφάλματος */
             
             /* Παράμετροι διεπαφής */
-            --panel-border: 2px solid var(--primary);
             --frame-thickness: 30px; /* Πάχος εξωτερικού πλαισίου */
             --tick-length: 5px;      /* Μήκος γραμμών που προεξέχουν */
             --tick-spacing: 40px;    /* Απόσταση μεταξύ γραμμών συντεταγμένων */
             --sidebar-width: 340px;  /* Πλάτος πλευρικής στήλης */
+            --border-radius: 12px;   /* Στρογγυλεμένες γωνίες */
         }
         
         body {
@@ -35,185 +36,75 @@
         }
         
         /* Εξωτερικό πλαίσιο με γραμμές συντεταγμένων */
-        body::before {
-            content: "";
+        .frame-container {
             position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 9999;
-            top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            border: var(--frame-thickness) solid rgba(0, 58, 93, 0.7); /* Ημιδιαφανές πλαίσιο */
+        }
+        
+        .frame-border {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: var(--frame-thickness) solid rgba(67, 97, 238, 0.3);
             box-sizing: border-box;
         }
         
-        /* Οριζόντιες γραμμές πάνω */
-        .tick-top {
-            position: fixed;
+        /* Tick marks που προεξέχουν */
+        .tick-marks {
+            position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: var(--frame-thickness);
+            bottom: 0;
+        }
+        
+        .tick-mark {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.7);
             z-index: 10000;
-            pointer-events: none;
         }
         
-        .tick-top::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to right,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν πάνω */
-        .tick-top .tick-marker {
-            position: absolute;
-            width: 1px;
-            height: var(--tick-length);
-            background-color: white;
-            top: var(--frame-thickness);
-        }
-        
-        /* Οριζόντιες γραμμές κάτω */
-        .tick-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-bottom::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to right,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν κάτω */
-        .tick-bottom .tick-marker {
-            position: absolute;
-            width: 1px;
-            height: var(--tick-length);
-            background-color: white;
-            bottom: var(--frame-thickness);
-        }
-        
-        /* Κάθετες γραμμές αριστερά */
-        .tick-left {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-left::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν αριστερά */
-        .tick-left .tick-marker {
-            position: absolute;
+        .tick-mark.horizontal {
+            width: var(--tick-spacing);
             height: 1px;
-            width: var(--tick-length);
-            background-color: white;
-            left: var(--frame-thickness);
         }
         
-        /* Κάθετες γραμμές δεξιά */
-        .tick-right {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            width: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-right::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            width: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν δεξιά */
-        .tick-right .tick-marker {
-            position: absolute;
-            height: 1px;
-            width: var(--tick-length);
-            background-color: white;
-            right: var(--frame-thickness);
+        .tick-mark.vertical {
+            width: 1px;
+            height: var(--tick-spacing);
         }
         
         /* Κουμπί εμφάνισης μενού */
         #menu-toggle {
             position: fixed;
-            top: calc(var(--frame-thickness) + 10px);
-            left: calc(var(--frame-thickness) + 10px);
+            top: calc(var(--frame-thickness) + 15px);
+            left: calc(var(--frame-thickness) + 15px);
             z-index: 10000;
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
             width: 45px;
             height: 45px;
+            border-radius: 50%;
             font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
         }
         
         #menu-toggle:hover {
-            background-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
         }
         
         /* Πλευρική στήλη */
@@ -223,17 +114,20 @@
             left: var(--frame-thickness);
             bottom: var(--frame-thickness);
             width: var(--sidebar-width);
-            background-color: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 9990;
             transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            padding: 15px;
-            padding-top: 60px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            gap: 20px;
+            padding: 20px;
+            padding-top: 70px;
+            box-shadow: 5px 0 30px rgba(0, 0, 0, 0.1);
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
         }
         
         #sidebar.open {
@@ -241,27 +135,36 @@
         }
         
         .panel {
-            background: var(--background);
-            border: var(--panel-border);
-            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .panel:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
         }
         
         /* Logo MapLens */
         .app-logo {
-            margin: 0 auto;
             text-align: center;
-            padding-bottom: 15px;
+            margin-bottom: 20px;
         }
         
         .logo-text {
-            display: inline-block;
-            font-size: 2.2em;
+            font-size: 2.5em;
             font-weight: bold;
-            letter-spacing: 1px;
+            font-style: italic;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            display: inline-block;
             position: relative;
         }
         
@@ -272,73 +175,83 @@
             left: 2px;
             opacity: 0.1;
             -webkit-text-fill-color: var(--primary);
+            z-index: -1;
         }
         
         .logo-icon {
-            display: inline-block;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        
-        .map-icon {
-            width: 24px;
-            height: 24px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
+            box-shadow: 0 3px 10px rgba(67, 97, 238, 0.3);
+        }
+        
+        .logo-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
         }
         
         #status {
-            color: var(--primary);
+            color: var(--dark);
             font-size: 1em;
-            font-weight: bold;
+            font-weight: 600;
             text-align: center;
+            margin-top: 10px;
         }
         
         #accuracy {
-            color: var(--primary);
-            background: var(--neutral);
-            padding: 4px 8px;
-            font-size: 1em;
-            margin: 7px auto 0 auto;
+            color: var(--dark);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 10px auto;
             display: block;
             width: fit-content;
-            font-weight: bold;
+            font-weight: 500;
             letter-spacing: 0.5px;
+            transition: all 0.3s ease;
         }
         
         #datetime {
-            color: var(--neutral);
+            color: var(--dark);
+            opacity: 0.7;
             text-align: center;
-            margin-top: 7px;
-            font-size: 0.95em;
+            margin-top: 5px;
+            font-size: 0.9em;
             letter-spacing: 0.5px;
         }
         
         .btn {
-            background-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
             border: none;
-            padding: 10px 13px;
-            font-size: 1em;
-            font-weight: 500;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 0.95em;
+            font-weight: 600;
             cursor: pointer;
-            margin: 3px 0;
-            transition: background-color 0.2s;
+            margin: 8px 0;
+            transition: all 0.3s ease;
             display: block;
             width: 100%;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
         }
         
         .btn:hover {
-            background-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
         }
         
         #file-input {
@@ -348,50 +261,68 @@
         #error-message {
             color: var(--error);
             background: rgba(231, 76, 60, 0.1);
-            border: 1.5px solid var(--error);
-            padding: 8px 10px;
-            margin-top: 7px;
-            font-size: 1em;
+            border-radius: var(--border-radius);
+            padding: 12px 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
             display: none;
         }
 
         /* Επιλογέας γλώσσας */
         #language-selector {
             position: fixed;
-            top: calc(var(--frame-thickness) + 10px);
-            right: calc(var(--frame-thickness) + 10px);
+            top: calc(var(--frame-thickness) + 15px);
+            right: calc(var(--frame-thickness) + 15px);
             z-index: 10000;
             display: flex;
+            gap: 5px;
         }
 
         #language-selector button {
-            background-color: var(--primary);
-            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            color: var(--dark);
             border: none;
-            padding: 6px 12px;
-            margin-left: 5px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         #language-selector button:hover {
-            background-color: var(--accent);
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
         }
 
         #language-selector button.active {
-            background-color: var(--accent);
-            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
         }
 
         /* Πληροφορίες δημιουργού */
         #copyright {
             position: fixed;
-            bottom: calc(var(--frame-thickness) + 5px);
-            right: calc(var(--frame-thickness) + 10px);
+            bottom: calc(var(--frame-thickness) + 10px);
+            right: calc(var(--frame-thickness) + 15px);
             font-size: 0.8em;
-            color: var(--neutral);
+            color: var(--dark);
+            opacity: 0.7;
             text-align: right;
             z-index: 10000;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            padding: 8px 15px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        #copyright:hover {
+            opacity: 1;
         }
 
         #copyright a {
@@ -407,78 +338,67 @@
         /* Input styling */
         input[type="text"] {
             width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border: 1px solid var(--neutral);
-            transition: border-color 0.3s;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+            border-radius: 30px;
+            transition: all 0.3s ease;
             box-sizing: border-box;
+            font-size: 0.9em;
         }
 
         input[type="text"]:focus {
-            border-color: var(--accent);
+            border-color: var(--secondary);
             outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.2);
         }
 
         /* Status colors */
         .status-good {
             background-color: rgba(46, 204, 113, 0.2);
-            color: var(--primary);
+            color: var(--dark);
         }
 
         .status-medium {
             background-color: rgba(241, 196, 15, 0.2);
-            color: var(--primary);
+            color: var(--dark);
         }
 
         .status-bad {
             background-color: rgba(231, 76, 60, 0.2);
-            color: var(--primary);
+            color: var(--dark);
         }
 
         .divider {
-            color: var(--neutral);
-            margin: 6px 0;
+            color: var(--dark);
+            opacity: 0.5;
+            margin: 10px 0;
             text-align: center;
-            font-size: 0.95em;
+            font-size: 0.9em;
+        }
+        
+        /* Προσαρμογή για μικρότερες οθόνες */
+        @media (max-width: 768px) {
+            :root {
+                --frame-thickness: 20px;
+                --sidebar-width: 280px;
+            }
+            
+            .logo-text {
+                font-size: 2em;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Τα πλαίσια με τις γραμμές που προεξέχουν -->
-    <div class="tick-top">
-        <!-- Γραμμές που προεξέχουν από πάνω προς τα κάτω -->
-        <script>
-            for (let i = 0; i <= window.innerWidth; i += 40) {
-                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
-            }
-        </script>
-    </div>
-    
-    <div class="tick-bottom">
-        <!-- Γραμμές που προεξέχουν από κάτω προς τα πάνω -->
-        <script>
-            for (let i = 0; i <= window.innerWidth; i += 40) {
-                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
-            }
-        </script>
-    </div>
-    
-    <div class="tick-left">
-        <!-- Γραμμές που προεξέχουν από αριστερά προς τα δεξιά -->
-        <script>
-            for (let i = 0; i <= window.innerHeight; i += 40) {
-                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
-            }
-        </script>
-    </div>
-    
-    <div class="tick-right">
-        <!-- Γραμμές που προεξέχουν από δεξιά προς τα αριστερά -->
-        <script>
-            for (let i = 0; i <= window.innerHeight; i += 40) {
-                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
-            }
-        </script>
+    <!-- Εξωτερικό πλαίσιο με tick marks -->
+    <div class="frame-container">
+        <div class="frame-border"></div>
+        <div class="tick-marks" id="tick-marks"></div>
     </div>
     
     <!-- Κουμπί εμφάνισης μενού -->
@@ -500,7 +420,9 @@
         <div class="panel">
             <div class="app-logo">
                 <span class="logo-icon">
-                    <div class="map-icon">M</div>
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                    </svg>
                 </span>
                 <span class="logo-text">MapLens</span>
             </div>
@@ -558,45 +480,58 @@
         const kmlContainer = document.getElementById('kml-container');
         const langEl = document.getElementById('lang-el');
         const langEn = document.getElementById('lang-en');
+        const tickMarksContainer = document.getElementById('tick-marks');
 
-        // Προσαρμογή των γραμμών βάσει του μεγέθους του παραθύρου
-        window.addEventListener('resize', updateTickMarkers);
-
-        function updateTickMarkers() {
-            const tickTop = document.querySelector('.tick-top');
-            const tickBottom = document.querySelector('.tick-bottom');
-            const tickLeft = document.querySelector('.tick-left');
-            const tickRight = document.querySelector('.tick-right');
+        // Δημιουργία των tick marks
+        function createTickMarks() {
+            // Καθαρισμός προηγούμενων tick marks
+            tickMarksContainer.innerHTML = '';
             
-            // Καθαρισμός προηγούμενων δεικτών
-            tickTop.innerHTML = '';
-            tickBottom.innerHTML = '';
-            tickLeft.innerHTML = '';
-            tickRight.innerHTML = '';
+            // Υπολογισμός αριθμού tick marks
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const frameThickness = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--frame-thickness'));
+            const tickSpacing = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-spacing'));
+            const tickLength = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-length'));
             
-            // Προσθήκη νέων δεικτών βάσει του τρέχοντος μεγέθους παραθύρου
-            for (let i = 0; i <= window.innerWidth; i += 40) {
-                const markerTop = document.createElement('div');
-                markerTop.className = 'tick-marker';
-                markerTop.style.left = i + 'px';
-                tickTop.appendChild(markerTop);
-                
-                const markerBottom = document.createElement('div');
-                markerBottom.className = 'tick-marker';
-                markerBottom.style.left = i + 'px';
-                tickBottom.appendChild(markerBottom);
+            // Δημιουργία οριζόντιων tick marks (πάνω)
+            for (let i = frameThickness; i < windowWidth - frameThickness; i += tickSpacing) {
+                const tick = document.createElement('div');
+                tick.className = 'tick-mark horizontal';
+                tick.style.top = `${frameThickness}px`;
+                tick.style.left = `${i}px`;
+                tick.style.height = `${tickLength}px`;
+                tickMarksContainer.appendChild(tick);
             }
             
-            for (let i = 0; i <= window.innerHeight; i += 40) {
-                const markerLeft = document.createElement('div');
-                markerLeft.className = 'tick-marker';
-                markerLeft.style.top = i + 'px';
-                tickLeft.appendChild(markerLeft);
-                
-                const markerRight = document.createElement('div');
-                markerRight.className = 'tick-marker';
-                markerRight.style.top = i + 'px';
-                tickRight.appendChild(markerRight);
+            // Δημιουργία οριζόντιων tick marks (κάτω)
+            for (let i = frameThickness; i < windowWidth - frameThickness; i += tickSpacing) {
+                const tick = document.createElement('div');
+                tick.className = 'tick-mark horizontal';
+                tick.style.bottom = `${frameThickness}px`;
+                tick.style.left = `${i}px`;
+                tick.style.height = `${tickLength}px`;
+                tickMarksContainer.appendChild(tick);
+            }
+            
+            // Δημιουργία κάθετων tick marks (αριστερά)
+            for (let i = frameThickness; i < windowHeight - frameThickness; i += tickSpacing) {
+                const tick = document.createElement('div');
+                tick.className = 'tick-mark vertical';
+                tick.style.left = `${frameThickness}px`;
+                tick.style.top = `${i}px`;
+                tick.style.width = `${tickLength}px`;
+                tickMarksContainer.appendChild(tick);
+            }
+            
+            // Δημιουργία κάθετων tick marks (δεξιά)
+            for (let i = frameThickness; i < windowHeight - frameThickness; i += tickSpacing) {
+                const tick = document.createElement('div');
+                tick.className = 'tick-mark vertical';
+                tick.style.right = `${frameThickness}px`;
+                tick.style.top = `${i}px`;
+                tick.style.width = `${tickLength}px`;
+                tickMarksContainer.appendChild(tick);
             }
         }
 
@@ -642,6 +577,15 @@
             }
         };
 
+        // Αρχικοποίηση
+        window.addEventListener('DOMContentLoaded', () => {
+            createTickMarks();
+            updateDateTime();
+        });
+        
+        // Προσαρμογή σε αλλαγή μεγέθους παραθύρου
+        window.addEventListener('resize', createTickMarks);
+
         // Toggle sidebar
         menuToggle.addEventListener('click', () => {
             sidebar.classList.toggle('open');
@@ -654,7 +598,6 @@
             datetimeEl.textContent = now.toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
         }
         setInterval(updateDateTime, 1000);
-        updateDateTime();
 
         // Event listeners
         uploadBtn.addEventListener('click', () => fileInput.click());
@@ -857,7 +800,7 @@
                 line.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#003A5D', // Primary color
+                    color: '#4361EE', // Primary color
                     opacity: 0.85,
                     width: 6
                 });
@@ -883,7 +826,7 @@
                 height: maxDistance * 2
             });
             fill.setAttribute('material', {
-                color: '#ADADAD', // Neutral color
+                color: '#4CC9F0', // Secondary color
                 opacity: 0.25,
                 transparent: true,
                 side: 'double'
@@ -897,7 +840,7 @@
             text.setAttribute('scale', '7 7 7');
             text.setAttribute('look-at', '[gps-camera]');
             text.setAttribute('align', 'center');
-            text.setAttribute('color', '#003A5D'); // Primary color
+            text.setAttribute('color', '#4361EE'); // Primary color
             text.setAttribute('position', '0 12 0');
             kmlContainer.appendChild(text);
         }
@@ -912,7 +855,7 @@
                 lineEntity.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#4FC3F7', // Accent color
+                    color: '#F72585', // Accent color
                     opacity: 0.9,
                     width: 4
                 });
@@ -927,7 +870,7 @@
                 text.setAttribute('scale', '6 6 6');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#003A5D'); // Primary color
+                text.setAttribute('color', '#4361EE'); // Primary color
                 text.setAttribute('position', '0 10 0');
                 kmlContainer.appendChild(text);
             }
@@ -938,7 +881,7 @@
                 const p = point.points[0];
                 const sphere = document.createElement('a-sphere');
                 sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', '#4FC3F7'); // Accent color
+                sphere.setAttribute('color', '#F72585'); // Accent color
                 sphere.setAttribute('radius', '2.5');
                 sphere.setAttribute('position', '0 0 0');
                 kmlContainer.appendChild(sphere);
@@ -948,7 +891,7 @@
                 text.setAttribute('scale', '5 5 5');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#003A5D'); // Primary color
+                text.setAttribute('color', '#4361EE'); // Primary color
                 text.setAttribute('position', '0 8 0');
                 kmlContainer.appendChild(text);
             }
@@ -1012,9 +955,6 @@
         
         // AR scene initialization and location handling
         document.addEventListener('DOMContentLoaded', () => {
-            // Αρχικοποίηση των δεικτών στα πλαίσια
-            updateTickMarkers();
-            
             const camera = document.querySelector('a-camera');
             camera.addEventListener('gps-camera-update-position', e => {
                 userPosition = e.detail.position;
