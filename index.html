@@ -1,126 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>WebAR KML Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <!-- A-Frame core + AR.js -->
+
+  <!-- A-Frame & AR.js -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+  <script src="https://rawcdn.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
+
+  <!-- Leaflet & Omnivore for KML parsing -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+
   <style>
-    body { margin:0; overflow:hidden; }
+    body { margin: 0; overflow: hidden; }
     #fileInput {
       position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(255,255,255,0.85);
-      padding: 6px; border-radius: 4px;
+      top: 1em; left: 50%;
+      transform: translateX(-50%);
       z-index: 999;
-    }
-    a-scene { 
-      width: 100%; height: 100%;
-      position: absolute; top:0; left:0;
+      background: rgba(255,255,255,0.8);
+      padding: .5em 1em;
+      border-radius: .3em;
     }
   </style>
 </head>
 <body>
-  <!-- Επιλογή ενός ή πολλαπλών .kml -->
-  <input type="file" id="fileInput" accept=".kml" multiple />
+  <!-- allow the user to load one or more .kml files -->
+  <input
+    type="file"
+    id="fileInput"
+    accept=".kml"
+    multiple
+  />
 
-  <!-- Η AR σκηνή είναι πάντα ορατή -->
+  <!-- AR.js scene with all the flags needed on iOS Safari -->
   <a-scene
     embedded
-    arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 0; gpsMaxDistance: 20000;">
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: true"
+    arjs="sourceType: camera;
+          debugUIEnabled: false;
+          gpsMinDistance: 0;
+          gpsMaxDistance: 20000;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    webkit-playsinline
+    playsinline
+  >
     <a-camera gps-camera rotation-reader></a-camera>
   </a-scene>
 
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const sceneEl   = document.querySelector('a-scene');
-    const fileInput = document.getElementById('fileInput');
-    const maxDist   = 20000; // 20 χλμ
+    const MAX_DISTANCE = 20000; // 20 km
 
-    function getDistance(lat1,lon1,lat2,lon2) {
-      const R = 6371000, toRad = d=>d*Math.PI/180;
-      const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
-      const a = Math.sin(dLat/2)**2 +
-                Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*
-                Math.sin(dLon/2)**2;
-      return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-    }
+    document
+      .getElementById('fileInput')
+      .addEventListener('change', function (e) {
+        const files = Array.from(e.target.files)
+          .filter(f => f.name.toLowerCase().endsWith('.kml'));
 
-    function renderShape(coords, type) {
-      navigator.geolocation.getCurrentPosition(pos=>{
-        const uLat=pos.coords.latitude, uLon=pos.coords.longitude;
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const blob = new Blob(
+              [reader.result],
+              { type: 'application/vnd.google-earth.kml+xml' }
+            );
+            const url = URL.createObjectURL(blob);
 
-        // φιλτράρισμα απόστασης
-        if (getDistance(uLat,uLon, coords[0].lat,coords[0].lon) > maxDist) return;
+            omnivore
+              .kml(url)
+              .on('ready', function () {
+                this.eachLayer(layer => {
+                  // get the first ring of coordinates (for Polygons) or a single LatLng
+                  let pts = layer.getLatLngs
+                    ? layer.getLatLngs()[0]
+                    : [ layer.getLatLng() ];
 
-        if (type==='Point') {
-          const s = document.createElement('a-sphere');
-          s.setAttribute('gps-entity-place',
-            `latitude:${coords[0].lat};longitude:${coords[0].lon};altitude:${coords[0].alt};`);
-          s.setAttribute('radius','2'); s.setAttribute('color','#f00');
-          s.setAttribute('opacity','0.8');
-          sceneEl.appendChild(s);
+                  pts.forEach(p => {
+                    // distance filter
+                    navigator.geolocation.getCurrentPosition(pos => {
+                      const d = layer._map
+                        ? layer._map.distance(
+                            [pos.coords.latitude, pos.coords.longitude],
+                            [p.lat, p.lng]
+                          )
+                        : Infinity;
+                      if (d > MAX_DISTANCE) return;
 
-        } else if (type==='LineString') {
-          for (let i=0;i<coords.length-1;i++){
-            const e = document.createElement('a-entity');
-            e.setAttribute('gps-entity-place',
-              `latitude:${coords[i].lat};longitude:${coords[i].lon};altitude:${coords[i].alt};`);
-            e.setAttribute('line', {
-              start: '0 0 0',
-              end: `${coords[i+1].lon-coords[i].lon} 0 ${coords[i+1].lat-coords[i].lat}`,
-              color: '#0f0'
-            });
-            sceneEl.appendChild(e);
-          }
+                      // create a red translucent sphere at each point
+                      const sphere = document.createElement('a-sphere');
+                      sphere.setAttribute(
+                        'gps-entity-place',
+                        `latitude: ${p.lat}; longitude: ${p.lng};`
+                      );
+                      sphere.setAttribute('radius', '1');
+                      sphere.setAttribute('color', '#FF0000');
+                      sphere.setAttribute('opacity', '0.6');
+                      document.querySelector('a-scene').appendChild(sphere);
+                    });
+                  });
 
-        } else if (type==='Polygon') {
-          const poly = document.createElement('a-entity');
-          poly.setAttribute('gps-entity-place',
-            `latitude:${coords[0].lat};longitude:${coords[0].lon};altitude:${coords[0].alt};`);
-          const verts = coords.map(p=>`${p.lon},${p.lat}`).join(' ');
-          poly.setAttribute('polygon',{ vertices: verts, color: '#00f', opacity: 0.4 });
-          sceneEl.appendChild(poly);
-        }
-      },err=>console.error(err),{enableHighAccuracy:true});
-    }
-
-    function parseKML(text) {
-      const xml = new DOMParser().parseFromString(text,'application/xml');
-      Array.from(xml.querySelectorAll('Placemark')).forEach(pm=>{
-        let el, type;
-        if (el = pm.querySelector('Point coordinates'))      type='Point';
-        else if (el = pm.querySelector('LineString coordinates')) type='LineString';
-        else if (el = pm.querySelector('Polygon coordinates'))   type='Polygon';
-        else return;
-
-        const coords = el.textContent.trim()
-                         .split(/\s+/)
-                         .map(str=>{
-                           const [lon,lat,alt=0]=str.split(',').map(Number);
-                           return {lat,lon,alt};
-                         });
-        renderShape(coords, type);
+                  // draw polygon outlines (no fill)
+                  if (layer.getLatLngs) {
+                    const coords = layer.getLatLngs()[0];
+                    for (let i = 0; i < coords.length - 1; i++) {
+                      const start = coords[i];
+                      const end = coords[i+1];
+                      const line = document.createElement('a-entity');
+                      line.setAttribute(
+                        'line',
+                        `start: ${start.lng} ${start.lat} 0;
+                         end:   ${end.lng}   ${end.lat} 0;
+                         color: #FF0000`
+                      );
+                      line.setAttribute(
+                        'gps-entity-place',
+                        `latitude: ${start.lat}; longitude: ${start.lng}`
+                      );
+                      document.querySelector('a-scene').appendChild(line);
+                    }
+                  }
+                });
+              });
+          };
+          reader.readAsText(file);
+        });
       });
-    }
-
-    // Φόρτωση του thermi.kml (προκαθορισμένο)
-    fetch('thermi.kml')
-      .then(r=>r.text())
-      .then(parseKML)
-      .catch(console.error);
-
-    // Φόρτωση αρχείων που διαλέγει ο χρήστης
-    fileInput.addEventListener('change',e=>{
-      Array.from(e.target.files).forEach(file=>{
-        const reader = new FileReader();
-        reader.onload = ()=> parseKML(reader.result);
-        reader.readAsText(file);
-      });
-    });
-  });
   </script>
 </body>
 </html>
