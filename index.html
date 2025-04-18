@@ -1,136 +1,120 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>WebAR KML Viewer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <!-- A‑Frame + AR.js -->
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://rawcdn.githack.com/AR-js-org/AR.js/3.4.2/aframe/build/aframe-ar.min.js"></script>
-  <!-- Leaflet + Omnivore for KML parsing -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #startAR {
-      position: absolute;
-      top:50%; left:50%;
-      transform:translate(-50%,-50%);
-      padding:1em 2em;
-      font-size:1.2em;
-      z-index:999;
-    }
-    #fileInput {
-      position:absolute;
-      top:1em; left:1em;
-      z-index:999;
-      background: rgba(255,255,255,0.8);
-      padding:0.5em;
-      border-radius:0.3em;
-    }
-  </style>
+    <meta charset="utf-8">
+    <title>DotsikoAR WebAR</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <style>
+        #loading {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 10000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
 </head>
-<body>
-  <!-- Button για user gesture -->
-  <button id="startAR">Start AR</button>
-  <!-- File picker για KML -->
-  <input type="file" id="fileInput" accept=".kml" />
-  <!-- Η AR.js σκηνή -->
-  <a-scene embedded
-           vr-mode-ui="enabled: false"
-           arjs="sourceType: camera; debugUIEnabled: false; gpsMinDistance: 1;">
-    <a-camera gps-camera rotation-reader></a-camera>
-  </a-scene>
+<body style="margin: 0; overflow: hidden;">
+    <div id="loading">🔃 Φόρτωση GPS...</div>
 
-  <script>
-    // Μέγιστη απόσταση σε μέτρα (20 km)
-    const MAX_DISTANCE = 20000;
+    <a-scene 
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true; precision: medium;"
+        embedded>
 
-    // Haversine distance (σε μέτρα)
-    function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371e3;
-      const φ1 = lat1 * Math.PI/180;
-      const φ2 = lat2 * Math.PI/180;
-      const Δφ = (lat2 - lat1) * Math.PI/180;
-      const Δλ = (lon2 - lon1) * Math.PI/180;
-      const a = Math.sin(Δφ/2)*Math.sin(Δφ/2) +
-                Math.cos(φ1)*Math.cos(φ2) *
-                Math.sin(Δλ/2)*Math.sin(Δλ/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+        <a-camera gps-camera rotation-reader></a-camera>
+        <a-entity id="kml-container"></a-entity>
+
+    </a-scene>
+
+    <script>
+    // Προσθήκη Eruda για debugging
+    document.write('<script src="https://cdn.jsdelivr.net/npm/eruda"><\/script>');
+    eruda.init();
+
+    let userPosition = null;
+
+    // Φόρτωση KML
+    async function loadKML(url) {
+        try {
+            const response = await fetch(url);
+            const kmlText = await response.text();
+            const parser = new DOMParser();
+            const kmlDoc = parser.parseFromString(kmlText, "text/xml");
+            
+            return Array.from(kmlDoc.querySelectorAll('Placemark')).map(placemark => {
+                const coords = placemark.querySelector('coordinates').textContent.trim();
+                return coords.split(/\s+/).map(coord => {
+                    const [lon, lat] = coord.split(',').map(Number);
+                    return { lat, lon };
+                });
+            });
+        } catch (error) {
+            console.error("Σφάλμα φόρτωσης KML:", error);
+            alert("Σφάλμα φόρτωσης KML αρχείου");
+        }
     }
 
-    document.getElementById('startAR').addEventListener('click', async () => {
-      // iOS 13+ permission για device orientation
-      if (typeof DeviceOrientationEvent !== 'undefined' &&
-          DeviceOrientationEvent.requestPermission) {
-        await DeviceOrientationEvent.requestPermission();
-      }
-      // permission για γεωτοποθεσία
-      await new Promise(res => navigator.geolocation.getCurrentPosition(res));
-      // κρύβουμε το κουμπί
-      document.getElementById('startAR').style.display = 'none';
-      // ξεκλειδώνουμε το AR
-      document.querySelector('a-scene').enterVR();
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const sceneEl = document.querySelector('a-scene');
-
-      // Συνάρτηση που φορτώνει και renderάρει ένα δεδομένο URL KML
-      function loadKML(url) {
-        omnivore.kml(url)
-          .on('ready', function() {
-            // πιάσε τα layers
-            this.eachLayer(layer => {
-              if (!layer.getLatLngs) return;
-              const coords = layer.getLatLngs()[0];
-              coords.forEach(pt => {
-                navigator.geolocation.getCurrentPosition(pos => {
-                  const d = getDistance(
-                    pos.coords.latitude,
-                    pos.coords.longitude,
-                    pt.lat, pt.lng
-                  );
-                  if (d > MAX_DISTANCE) return;  // έξω από τα 20 km
-                  // δημιουργία AR sphere
-                  const sphere = document.createElement('a-sphere');
-                  let alt = (pt.alt || 0);
-                  sphere.setAttribute('gps-entity-place',
-                    `latitude: ${pt.lat};
-                     longitude: ${pt.lng};
-                     altitude: ${alt}`
-                  );
-                  sphere.setAttribute('radius', '1');
-                  sphere.setAttribute('color', '#FF0000');
-                  sphere.setAttribute('opacity', '0.6');
-                  sceneEl.appendChild(sphere);
-                });
-              });
-            });
-          })
-          .on('error', e => console.error('KML load error:', e));
-      }
-
-      // Αρχικό thermi.kml
-      loadKML('thermi.kml');
-
-      // Όταν ο χρήστης επιλέξει αρχείο
-      document.getElementById('fileInput').addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          const blob = new Blob([reader.result], {
-            type: 'application/vnd.google-earth.kml+xml'
-          });
-          const blobUrl = URL.createObjectURL(blob);
-          loadKML(blobUrl);
+    // Μετατροπή γεωγραφικών σε μέτρα
+    function geoToMeters(lat1, lon1, lat2, lon2) {
+        const R = 6378137;
+        const dLat = (lat2 - lat1) * Math.PI/180;
+        const dLon = (lon2 - lon1) * Math.PI/180;
+        return {
+            x: R * dLon * Math.cos(lat1 * Math.PI/180),
+            z: R * dLat
         };
-        reader.readAsText(file);
-      });
-    });
-  </script>
+    }
+
+    // Δημιουργία AR περιεχομένου
+    async function initAR(position) {
+        userPosition = position.coords;
+        document.getElementById('loading').textContent = "Φόρτωση KML...";
+        
+        const polygons = await loadKML('thermi.kml');
+        
+        polygons.forEach(polygon => {
+            const container = document.createElement('a-entity');
+            
+            // Δημιουργία πολυγώνου
+            polygon.forEach((point, index) => {
+                const nextPoint = polygon[(index + 1) % polygon.length];
+                const {x, z} = geoToMeters(userPosition.latitude, userPosition.longitude, point.lat, point.lon);
+                const {x: x2, z: z2} = geoToMeters(userPosition.latitude, userPosition.longitude, nextPoint.lat, nextPoint.lon);
+                
+                const line = document.createElement('a-entity');
+                line.setAttribute('line', {
+                    start: `${x} 0 ${z}`,
+                    end: `${x2} 0 ${z2}`,
+                    color: '#FF0000',
+                    opacity: 0.8
+                });
+                
+                container.appendChild(line);
+            });
+
+            document.querySelector('#kml-container').appendChild(container);
+        });
+        
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    // Εκκίνηση εφαρμογής
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            position => initAR(position),
+            error => alert("Χρειάζεται άδεια GPS"),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    } else {
+        alert("Η συσκευή σας δεν υποστηρίζει geolocation");
+    }
+    </script>
 </body>
 </html>
