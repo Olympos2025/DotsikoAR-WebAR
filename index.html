@@ -2,28 +2,35 @@
 <html lang="el">
 <head>
     <meta charset="utf-8">
-    <title>DotsikoAR by Olympos Consulting</title>
+    <title>MapLens</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         :root {
-            --olympos-blue: #003A5D; /* Το σκούρο μπλε από το λογότυπο */
-            --olympos-grey: #ADADAD; /* Το γκρι από το λογότυπο */
-            --panel-border: 2px solid var(--olympos-blue);
-            --frame-thickness: 20px; /* Αυξημένο από 10px σε 20px */
-            --tick-length: 8px;
-            --tick-spacing: 40px;
-            --sidebar-width: 340px;
+            /* Κύρια παλέτα χρωμάτων */
+            --primary: #003A5D;      /* Σκούρο μπλε */
+            --neutral: #ADADAD;      /* Ανοιχτό γκρι */
+            --background: #FFFFFF;   /* Λευκό */
+            --accent: #4FC3F7;       /* Ζωντανό κυανό */
+            --success: #2ECC71;      /* Πράσινο επιτυχίας */
+            --warning: #F1C40F;      /* Κίτρινο προειδοποίησης */
+            --error: #E74C3C;        /* Κόκκινο σφάλματος */
+            
+            /* Παράμετροι διεπαφής */
+            --panel-border: 2px solid var(--primary);
+            --frame-thickness: 30px; /* Πάχος εξωτερικού πλαισίου */
+            --tick-spacing: 40px;    /* Απόσταση μεταξύ γραμμών συντεταγμένων */
+            --sidebar-width: 340px;  /* Πλάτος πλευρικής στήλης */
         }
         
-        html, body {
-            height: 100%;
+        body {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             overflow: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
         }
         
         /* Εξωτερικό πλαίσιο με γραμμές συντεταγμένων */
@@ -33,7 +40,7 @@
             z-index: 9999;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            border: var(--frame-thickness) solid rgba(0, 58, 93, 0.5); /* Διαφανές πλαίσιο */
+            border: var(--frame-thickness) solid var(--primary);
             box-sizing: border-box;
         }
         
@@ -119,7 +126,7 @@
             top: calc(var(--frame-thickness) + 10px);
             left: calc(var(--frame-thickness) + 10px);
             z-index: 10000;
-            background-color: var(--olympos-blue);
+            background-color: var(--primary);
             color: white;
             border: none;
             width: 45px;
@@ -129,6 +136,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        #menu-toggle:hover {
+            background-color: var(--accent);
         }
         
         /* Πλευρική στήλη */
@@ -138,7 +150,7 @@
             left: var(--frame-thickness);
             bottom: var(--frame-thickness);
             width: var(--sidebar-width);
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             z-index: 9990;
             transform: translateX(-100%);
             transition: transform 0.3s ease-in-out;
@@ -148,6 +160,7 @@
             gap: 15px;
             padding: 15px;
             padding-top: 60px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
         }
         
         #sidebar.open {
@@ -155,39 +168,31 @@
         }
         
         .panel {
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--background);
             border: var(--panel-border);
             padding: 15px;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        
-        #logo {
-            display: block;
-            max-width: 240px;
-            margin: 0 auto 10px auto;
         }
         
         #app-name {
-            color: var(--olympos-blue);
+            color: var(--primary);
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1.4em;
             text-align: center;
             letter-spacing: 1.5px;
             margin-bottom: 6px;
         }
         
         #status {
-            color: var(--olympos-blue);
+            color: var(--primary);
             font-size: 1em;
             font-weight: bold;
             text-align: center;
         }
         
         #accuracy {
-            color: var(--olympos-blue);
-            background: var(--olympos-grey);
+            color: var(--primary);
+            background: var(--neutral);
             padding: 4px 8px;
-            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
             font-size: 1em;
             margin: 7px auto 0 auto;
             display: block;
@@ -197,7 +202,7 @@
         }
         
         #datetime {
-            color: var(--olympos-grey);
+            color: var(--neutral);
             text-align: center;
             margin-top: 7px;
             font-size: 0.95em;
@@ -205,22 +210,23 @@
         }
         
         .btn {
-            background-color: var(--olympos-blue);
+            background-color: var(--primary);
             color: white;
             border: none;
-            padding: 8px 13px;
-            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
+            padding: 10px 13px;
             font-size: 1em;
             font-weight: 500;
             cursor: pointer;
             margin: 3px 0;
-            transition: background 0.2s;
+            transition: background-color 0.2s;
             display: block;
             width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .btn:hover {
-            background-color: #00497a;
+            background-color: var(--accent);
         }
         
         #file-input {
@@ -228,14 +234,100 @@
         }
         
         #error-message {
-            color: #b10000;
-            background: #fff0f0;
-            border: 1.5px solid #b10000;
-            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
+            color: var(--error);
+            background: rgba(231, 76, 60, 0.1);
+            border: 1.5px solid var(--error);
             padding: 8px 10px;
             margin-top: 7px;
             font-size: 1em;
             display: none;
+        }
+
+        /* Επιλογέας γλώσσας */
+        #language-selector {
+            position: fixed;
+            top: calc(var(--frame-thickness) + 10px);
+            right: calc(var(--frame-thickness) + 10px);
+            z-index: 10000;
+            display: flex;
+        }
+
+        #language-selector button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            margin-left: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #language-selector button:hover {
+            background-color: var(--accent);
+        }
+
+        #language-selector button.active {
+            background-color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Πληροφορίες δημιουργού */
+        #copyright {
+            position: fixed;
+            bottom: calc(var(--frame-thickness) + 5px);
+            right: calc(var(--frame-thickness) + 10px);
+            font-size: 0.8em;
+            color: var(--neutral);
+            text-align: right;
+            z-index: 10000;
+        }
+
+        #copyright a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        #copyright a:hover {
+            color: var(--accent);
+        }
+
+        /* Input styling */
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--neutral);
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        /* Status colors */
+        .status-good {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--primary);
+        }
+
+        .status-medium {
+            background-color: rgba(241, 196, 15, 0.2);
+            color: var(--primary);
+        }
+
+        .status-bad {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--primary);
+        }
+
+        .divider {
+            color: var(--neutral);
+            margin: 6px 0;
+            text-align: center;
+            font-size: 0.95em;
         }
     </style>
 </head>
@@ -248,11 +340,21 @@
     <!-- Κουμπί εμφάνισης μενού -->
     <button id="menu-toggle">☰</button>
     
+    <!-- Επιλογέας γλώσσας -->
+    <div id="language-selector">
+        <button id="lang-el" class="active">EL</button>
+        <button id="lang-en">EN</button>
+    </div>
+
+    <!-- Πληροφορίες δημιουργού -->
+    <div id="copyright">
+        © 2025 Thomas G. Lagkas | <a href="mailto:Thomas.lagkas@outlook.com">Thomas.lagkas@outlook.com</a>
+    </div>
+    
     <!-- Πλευρική στήλη με όλα τα πλαίσια -->
     <div id="sidebar">
         <div class="panel">
-            <img id="logo" src="Olympos-Logo-EN-800px.jpg" alt="Olympos Consulting">
-            <div id="app-name">DotsikoAR</div>
+            <div id="app-name">MapLens</div>
             <div id="status">⌛ Αναμονή GPS...</div>
             <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
             <div id="datetime"></div>
@@ -260,15 +362,15 @@
         
         <div class="panel">
             <input type="file" id="file-input" accept=".kml">
-            <button id="upload-btn" class="btn">Φόρτωση KML</button>
-            <div style="color:var(--olympos-grey);margin:6px 0 3px 0;font-size:0.95em;text-align:center;">ή</div>
-            <input type="text" id="url-input" placeholder="URL του KML αρχείου" style="width:100%;border:1px solid var(--olympos-grey);padding:4px;box-sizing:border-box;margin-bottom:5px;">
-            <button id="load-url-btn" class="btn">Φόρτωση από URL</button>
+            <button id="upload-btn" class="btn" data-el="Φόρτωση KML" data-en="Load KML">Φόρτωση KML</button>
+            <div class="divider" data-el="ή" data-en="or">ή</div>
+            <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
+            <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
         </div>
         
         <div class="panel">
-            <button id="toggle-btn" class="btn">Εμφάνιση/Απόκρυψη AR</button>
-            <button id="reset-btn" class="btn">Επαναφορά</button>
+            <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
+            <button id="reset-btn" class="btn" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
         </div>
         
         <div id="error-message" class="panel"></div>
@@ -289,6 +391,7 @@
         let arVisible = true;
         let currentAccuracy = null;
         let userPosition = null;
+        let currentLanguage = 'el';
         
         // DOM Elements
         const menuToggle = document.getElementById('menu-toggle');
@@ -304,6 +407,51 @@
         const datetimeEl = document.getElementById('datetime');
         const errorMessageEl = document.getElementById('error-message');
         const kmlContainer = document.getElementById('kml-container');
+        const langEl = document.getElementById('lang-el');
+        const langEn = document.getElementById('lang-en');
+        const appName = document.getElementById('app-name');
+
+        // Κείμενα μεταφράσεων
+        const translations = {
+            el: {
+                waiting: "⌛ Αναμονή GPS...",
+                active: "✅ GPS ενεργό",
+                loading: "⏳ Φόρτωση KML...",
+                loaded: "✅ KML φορτώθηκε!",
+                error: "❌ Σφάλμα!",
+                reset: "AR επαναφέρθηκε",
+                accuracy: "Ακρίβεια GPS: ",
+                notAvailable: "Ακρίβεια GPS: Μη διαθέσιμη",
+                urlRequired: "Παρακαλώ εισάγετε ένα URL!",
+                noPolygons: "Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!",
+                invalidXml: "Μη έγκυρο XML!",
+                readError: "Σφάλμα ανάγνωσης αρχείου!",
+                parseError: "Σφάλμα ανάλυσης KML: ",
+                downloadError: "Σφάλμα λήψης KML: ",
+                meters: "m",
+                hideAR: "Απόκρυψη AR",
+                showAR: "Εμφάνιση AR"
+            },
+            en: {
+                waiting: "⌛ Waiting for GPS...",
+                active: "✅ GPS active",
+                loading: "⏳ Loading KML...",
+                loaded: "✅ KML loaded!",
+                error: "❌ Error!",
+                reset: "AR reset",
+                accuracy: "GPS accuracy: ",
+                notAvailable: "GPS accuracy: Not available",
+                urlRequired: "Please enter a URL!",
+                noPolygons: "No polygons/lines/points found in the KML!",
+                invalidXml: "Invalid XML!",
+                readError: "Error reading file!",
+                parseError: "Error parsing KML: ",
+                downloadError: "Error downloading KML: ",
+                meters: "m",
+                hideAR: "Hide AR",
+                showAR: "Show AR"
+            }
+        };
 
         // Toggle sidebar
         menuToggle.addEventListener('click', () => {
@@ -314,7 +462,7 @@
         // Date & time
         function updateDateTime() {
             const now = new Date();
-            datetimeEl.textContent = now.toLocaleString('el-GR');
+            datetimeEl.textContent = now.toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
         }
         setInterval(updateDateTime, 1000);
         updateDateTime();
@@ -325,28 +473,69 @@
         loadUrlBtn.addEventListener('click', handleUrlLoad);
         toggleBtn.addEventListener('click', toggleARVisibility);
         resetBtn.addEventListener('click', resetAR);
+        
+        // Language switchers
+        langEl.addEventListener('click', () => setLanguage('el'));
+        langEn.addEventListener('click', () => setLanguage('en'));
+
+        // Set language
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            // Update active button
+            langEl.classList.toggle('active', lang === 'el');
+            langEn.classList.toggle('active', lang === 'en');
+            
+            // Update all elements with data-el and data-en attributes
+            document.querySelectorAll('[data-el][data-en]').forEach(el => {
+                el.textContent = el.getAttribute(`data-${lang}`);
+            });
+            
+            // Update placeholders
+            document.querySelectorAll('[data-el-placeholder][data-en-placeholder]').forEach(el => {
+                el.setAttribute('placeholder', el.getAttribute(`data-${lang}-placeholder`));
+            });
+            
+            // Update status text
+            if (statusEl.textContent.includes('GPS')) {
+                statusEl.textContent = userPosition ? translations[lang].active : translations[lang].waiting;
+            }
+            
+            // Update accuracy 
+            if (currentAccuracy !== null) {
+                accuracyEl.textContent = `${translations[lang].accuracy}±${currentAccuracy.toFixed(2)}${translations[lang].meters}`;
+            } else {
+                accuracyEl.textContent = translations[lang].notAvailable;
+            }
+            
+            // Update toggle button text
+            toggleBtn.textContent = arVisible ? translations[lang].hideAR : translations[lang].showAR;
+            
+            // Update datetime format
+            updateDateTime();
+        }
 
         // Handle KML file upload
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
-            statusEl.textContent = "⏳ Φόρτωση KML...";
+            statusEl.textContent = translations[currentLanguage].loading;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const polygons = parseKML(e.target.result);
                     if (!polygons || polygons.length === 0) {
-                        showError("Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!");
+                        showError(translations[currentLanguage].noPolygons);
                     } else {
                         renderPolygons(polygons);
-                        statusEl.textContent = "✅ KML φορτώθηκε!";
+                        statusEl.textContent = translations[currentLanguage].loaded;
                     }
                 } catch (err) {
-                    showError("Σφάλμα ανάλυσης KML: " + err.message);
+                    showError(translations[currentLanguage].parseError + err.message);
                 }
             };
             reader.onerror = function() {
-                showError("Σφάλμα ανάγνωσης αρχείου!");
+                showError(translations[currentLanguage].readError);
             };
             reader.readAsText(file);
         }
@@ -355,10 +544,10 @@
         function handleUrlLoad() {
             const url = urlInput.value.trim();
             if (!url) {
-                showError("Παρακαλώ εισάγετε ένα URL!");
+                showError(translations[currentLanguage].urlRequired);
                 return;
             }
-            statusEl.textContent = "⏳ Λήψη KML...";
+            statusEl.textContent = translations[currentLanguage].loading;
             fetch(url)
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -368,17 +557,17 @@
                     try {
                         const polygons = parseKML(kmlText);
                         if (!polygons || polygons.length === 0) {
-                            showError("Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!");
+                            showError(translations[currentLanguage].noPolygons);
                         } else {
                             renderPolygons(polygons);
-                            statusEl.textContent = "✅ KML φορτώθηκε!";
+                            statusEl.textContent = translations[currentLanguage].loaded;
                         }
                     } catch (err) {
-                        showError("Σφάλμα ανάλυσης KML: " + err.message);
+                        showError(translations[currentLanguage].parseError + err.message);
                     }
                 })
                 .catch(error => {
-                    showError("Σφάλμα λήψης KML: " + error.message);
+                    showError(translations[currentLanguage].downloadError + error.message);
                 });
         }
 
@@ -387,7 +576,7 @@
             const parser = new DOMParser();
             const kmlDoc = parser.parseFromString(kmlText, "text/xml");
             const parserError = kmlDoc.getElementsByTagName('parsererror');
-            if (parserError.length > 0) throw new Error("Μη έγκυρο XML!");
+            if (parserError.length > 0) throw new Error(translations[currentLanguage].invalidXml);
             const polygons = [];
             const placemarks = kmlDoc.getElementsByTagName('Placemark');
             for (let i = 0; i < placemarks.length; i++) {
@@ -479,21 +668,24 @@
                 line.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#003A5D',
+                    color: '#003A5D', // Primary color
                     opacity: 0.85,
                     width: 6
                 });
                 kmlContainer.appendChild(line);
             }
+            // Calculate center point
             let avgLat = 0, avgLon = 0;
             points.forEach(p => { avgLat += p.lat; avgLon += p.lon; });
             avgLat /= points.length;
             avgLon /= points.length;
+            // Calculate maximum distance
             let maxDistance = 0;
             points.forEach(p => {
                 const distance = geoDistance(avgLat, avgLon, p.lat, p.lon);
                 if (distance > maxDistance) maxDistance = distance;
             });
+            // Create polygon fill
             const fill = document.createElement('a-entity');
             fill.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
             fill.setAttribute('geometry', {
@@ -502,20 +694,21 @@
                 height: maxDistance * 2
             });
             fill.setAttribute('material', {
-                color: '#ADADAD',
+                color: '#ADADAD', // Neutral color
                 opacity: 0.25,
                 transparent: true,
                 side: 'double'
             });
             fill.setAttribute('rotation', '-90 0 0');
             kmlContainer.appendChild(fill);
+            // Add text label
             const text = document.createElement('a-text');
             text.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
             text.setAttribute('value', polygon.name);
             text.setAttribute('scale', '7 7 7');
             text.setAttribute('look-at', '[gps-camera]');
             text.setAttribute('align', 'center');
-            text.setAttribute('color', '#003A5D');
+            text.setAttribute('color', '#003A5D'); // Primary color
             text.setAttribute('position', '0 12 0');
             kmlContainer.appendChild(text);
         }
@@ -530,12 +723,13 @@
                 lineEntity.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#003A5D',
+                    color: '#4FC3F7', // Accent color
                     opacity: 0.9,
                     width: 4
                 });
                 kmlContainer.appendChild(lineEntity);
             }
+            // Add label at midpoint
             if (points.length > 0) {
                 const midPoint = points[Math.floor(points.length / 2)];
                 const text = document.createElement('a-text');
@@ -544,7 +738,7 @@
                 text.setAttribute('scale', '6 6 6');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#003A5D');
+                text.setAttribute('color', '#003A5D'); // Primary color
                 text.setAttribute('position', '0 10 0');
                 kmlContainer.appendChild(text);
             }
@@ -555,7 +749,7 @@
                 const p = point.points[0];
                 const sphere = document.createElement('a-sphere');
                 sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', '#003A5D');
+                sphere.setAttribute('color', '#4FC3F7'); // Accent color
                 sphere.setAttribute('radius', '2.5');
                 sphere.setAttribute('position', '0 0 0');
                 kmlContainer.appendChild(sphere);
@@ -565,7 +759,7 @@
                 text.setAttribute('scale', '5 5 5');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#003A5D');
+                text.setAttribute('color', '#003A5D'); // Primary color
                 text.setAttribute('position', '0 8 0');
                 kmlContainer.appendChild(text);
             }
@@ -575,13 +769,15 @@
         function toggleARVisibility() {
             arVisible = !arVisible;
             kmlContainer.setAttribute('visible', arVisible);
-            toggleBtn.textContent = arVisible ? 'Απόκρυψη AR' : 'Εμφάνιση AR';
+            toggleBtn.textContent = arVisible ? 
+                translations[currentLanguage].hideAR : 
+                translations[currentLanguage].showAR;
         }
         
         // Reset AR scene
         function resetAR() {
             kmlContainer.innerHTML = '';
-            statusEl.textContent = "AR επαναφέρθηκε";
+            statusEl.textContent = translations[currentLanguage].reset;
         }
         
         // Show error message
@@ -591,7 +787,7 @@
             setTimeout(() => {
                 errorMessageEl.style.display = 'none';
             }, 5000);
-            statusEl.textContent = "❌ Σφάλμα!";
+            statusEl.textContent = translations[currentLanguage].error;
         }
         
         // Convert geo coordinates to meters
@@ -630,7 +826,7 @@
             const camera = document.querySelector('a-camera');
             camera.addEventListener('gps-camera-update-position', e => {
                 userPosition = e.detail.position;
-                statusEl.textContent = "✅ GPS ενεργό";
+                statusEl.textContent = translations[currentLanguage].active;
                 let acc = null;
                 if (e.detail.position && e.detail.position.accuracy !== undefined) {
                     acc = e.detail.position.accuracy;
@@ -639,21 +835,20 @@
                 }
                 if (acc !== null) {
                     currentAccuracy = acc;
-                    accuracyEl.textContent = `Ακρίβεια GPS: ±${currentAccuracy.toFixed(2)}m`;
+                    accuracyEl.textContent = `${translations[currentLanguage].accuracy}±${currentAccuracy.toFixed(2)}${translations[currentLanguage].meters}`;
+                    
+                    // Set appropriate color class based on accuracy
+                    accuracyEl.className = ''; // Remove existing classes
                     if (currentAccuracy <= 10) {
-                        accuracyEl.style.background = "#e2f7e1";
-                        accuracyEl.style.color = "#003A5D";
+                        accuracyEl.classList.add('status-good');
                     } else if (currentAccuracy <= 20) {
-                        accuracyEl.style.background = "#fffbe6";
-                        accuracyEl.style.color = "#003A5D";
+                        accuracyEl.classList.add('status-medium');
                     } else {
-                        accuracyEl.style.background = "#f8d7da";
-                        accuracyEl.style.color = "#003A5D";
+                        accuracyEl.classList.add('status-bad');
                     }
                 } else {
-                    accuracyEl.textContent = "Ακρίβεια GPS: Μη διαθέσιμη";
-                    accuracyEl.style.background = "#e2e3e5";
-                    accuracyEl.style.color = "#003A5D";
+                    accuracyEl.textContent = translations[currentLanguage].notAvailable;
+                    accuracyEl.className = '';
                 }
             });
         });
