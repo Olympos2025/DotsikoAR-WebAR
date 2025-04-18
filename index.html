@@ -9,10 +9,10 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         :root {
-            --olympos-blue: #1f3b4d;
-            --olympos-grey: #a6adb4;
+            --olympos-blue: #003A5D; /* Το σκούρο μπλε από το λογότυπο */
+            --olympos-grey: #ADADAD; /* Το γκρι από το λογότυπο */
             --panel-border: 2px solid var(--olympos-blue);
-            --frame-thickness: 10px;
+            --frame-thickness: 20px; /* Αυξημένο από 10px σε 20px */
             --tick-length: 8px;
             --tick-spacing: 40px;
             --sidebar-width: 340px;
@@ -33,7 +33,7 @@
             z-index: 9999;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            border: var(--frame-thickness) solid rgba(31, 59, 77, 0.5); /* Διαφανές πλαίσιο */
+            border: var(--frame-thickness) solid rgba(0, 58, 93, 0.5); /* Διαφανές πλαίσιο */
             box-sizing: border-box;
         }
         
@@ -220,7 +220,7 @@
         }
         
         .btn:hover {
-            background-color: #284c64;
+            background-color: #00497a;
         }
         
         #file-input {
@@ -251,7 +251,7 @@
     <!-- Πλευρική στήλη με όλα τα πλαίσια -->
     <div id="sidebar">
         <div class="panel">
-            <img id="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgMjUwIj48cGF0aCBkPSJNMzMuNSAxOTcuOGMwLTM2LjEgMjkuMy02NS4zIDY1LjQtNjUuM3M2NS40IDI5LjIgNjUuNCA2NS4zYzAgMzYuMS0yOS4zIDY1LjMtNjUuNCA2NS4zcy02NS40LTI5LjItNjUuNC02NS4zem0xMDguMSAwYzAtMjMuNS0xOS4yLTQyLjYtNDIuNy00Mi42cy00Mi43IDE5LjEtNDIuNyA0Mi42YzAgMjMuNSAxOS4yIDQyLjYgNDIuNyA0Mi42czQyLjctMTkuMSA0Mi43LTQyLjZ6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTE5Mi41IDk4LjR2MTYyLjloMjIuN1YxNTQuNmw1My42IDc3LjcgNTYuOC04MS42djExMC42aDIyLjdWOTguNGgtMjIuN2wtNTYuOCA4NS40LTUzLjYtODUuNGgtMjIuN3oiIGZpbGw9IiMwMzI2MzkiLz48cGF0aCBkPSJNMzY1IDk4LjR2MTYyLjloOTUuNnYtMjIuN2gtNzIuOXYtNDcuM2g2Ni44di0yMi43aC02Ni44di00Ny4zaDcyLjlWOTguNEgzNjV6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTQ3Ny4xIDk4LjR2MTYyLjloMjIuN1YxOTcuOGw0Mi43LTQ3LjMgNDIuNyA0Ny4zdjYzLjRoMjIuN1Y5OC40SDU4NXY3NS4xbC00Mi43LTQ3LjMtNDIuNyA0Ny4zVjk4LjRoLTIyLjV6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTYyNC4yIDk4LjR2MTYyLjloOTUuNnYtMjIuN2gtNzIuOXYtNDcuM2g2Ni44di0yMi43aC02Ni44di00Ny4zaDcyLjlWOTguNGgtOTUuNnoiIGZpbGw9IiMwMzI2MzkiLz48cGF0aCBkPSJNNzM2LjMgOTguNHYxNjIuOWgyMi43di0xNDAuMmg0NS4ybC0xMi4yLTIyLjdoLTU1Ljd6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTMuNSAxNS4zbDEyNiA2NCA2NC00My4zLTU2LjQtMjcuNEwzLjUgMTUuM3oiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTY0LjcgOC43bDEwMy44IDQxLjMgNzQuOS0yMUwxNjcgNi43IDY0LjcgOC43eiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMTQyIDBsMTI2IDgwLTkwIDQwLTg0LjgtNTIuN0wxNDIgMHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTI0Mi44IDkuM2w2Mi4xIDU4LjcgODcuMyAyLjctNDUuMy01Mi03NS4zLTkuNHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTI2OCAyOGwxMjcuMyA3MC4zLTg1LjMgMjQuNy00OC03MC43TDI2OCAyOHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTM1MC42IDguN2wzMS40IDE4IDQ1LjQtOC03LjctMTgtNjkuMS04eiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMzcxLjMgOC43bC0xNC43IDMzLjMgMjcuMy0xNS4zLTEyLjYtMTh6IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NjYiIHN0cm9rZS13aWR0aD0iNiIvPjx0ZXh0IHg9IjgwIiB5PSIyNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzk5OSI+Q09OU1VMVElORzwvdGV4dD48L3N2Zz4=" alt="Olympos Consulting">
+            <img id="logo" src="Olympos-Logo-EN-800px.jpg" alt="Olympos Consulting">
             <div id="app-name">DotsikoAR</div>
             <div id="status">⌛ Αναμονή GPS...</div>
             <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
@@ -479,7 +479,7 @@
                 line.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#1f3b4d',
+                    color: '#003A5D',
                     opacity: 0.85,
                     width: 6
                 });
@@ -502,7 +502,7 @@
                 height: maxDistance * 2
             });
             fill.setAttribute('material', {
-                color: '#a6adb4',
+                color: '#ADADAD',
                 opacity: 0.25,
                 transparent: true,
                 side: 'double'
@@ -515,7 +515,7 @@
             text.setAttribute('scale', '7 7 7');
             text.setAttribute('look-at', '[gps-camera]');
             text.setAttribute('align', 'center');
-            text.setAttribute('color', '#1f3b4d');
+            text.setAttribute('color', '#003A5D');
             text.setAttribute('position', '0 12 0');
             kmlContainer.appendChild(text);
         }
@@ -530,7 +530,7 @@
                 lineEntity.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#1f3b4d',
+                    color: '#003A5D',
                     opacity: 0.9,
                     width: 4
                 });
@@ -544,7 +544,7 @@
                 text.setAttribute('scale', '6 6 6');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#1f3b4d');
+                text.setAttribute('color', '#003A5D');
                 text.setAttribute('position', '0 10 0');
                 kmlContainer.appendChild(text);
             }
@@ -555,7 +555,7 @@
                 const p = point.points[0];
                 const sphere = document.createElement('a-sphere');
                 sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', '#1f3b4d');
+                sphere.setAttribute('color', '#003A5D');
                 sphere.setAttribute('radius', '2.5');
                 sphere.setAttribute('position', '0 0 0');
                 kmlContainer.appendChild(sphere);
@@ -565,7 +565,7 @@
                 text.setAttribute('scale', '5 5 5');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#1f3b4d');
+                text.setAttribute('color', '#003A5D');
                 text.setAttribute('position', '0 8 0');
                 kmlContainer.appendChild(text);
             }
@@ -642,18 +642,18 @@
                     accuracyEl.textContent = `Ακρίβεια GPS: ±${currentAccuracy.toFixed(2)}m`;
                     if (currentAccuracy <= 10) {
                         accuracyEl.style.background = "#e2f7e1";
-                        accuracyEl.style.color = "#1f3b4d";
+                        accuracyEl.style.color = "#003A5D";
                     } else if (currentAccuracy <= 20) {
                         accuracyEl.style.background = "#fffbe6";
-                        accuracyEl.style.color = "#1f3b4d";
+                        accuracyEl.style.color = "#003A5D";
                     } else {
                         accuracyEl.style.background = "#f8d7da";
-                        accuracyEl.style.color = "#1f3b4d";
+                        accuracyEl.style.color = "#003A5D";
                     }
                 } else {
                     accuracyEl.textContent = "Ακρίβεια GPS: Μη διαθέσιμη";
                     accuracyEl.style.background = "#e2e3e5";
-                    accuracyEl.style.color = "#1f3b4d";
+                    accuracyEl.style.color = "#003A5D";
                 }
             });
         });
