@@ -4,447 +4,727 @@
     <meta charset="utf-8">
     <title>MapLens</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    
     <!-- A-Frame & AR.js -->
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    
+    <!-- GSAP για animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         :root {
-            /* Σύγχρονη παλέτα χρωμάτων 2025 */
-            --primary: #4361EE;      /* Ζωντανό μπλε */
-            --secondary: #4CC9F0;    /* Φωτεινό κυανό */
-            --accent: #F72585;       /* Ζωντανό ροζ */
-            --light: #F8F9FA;        /* Ανοιχτό γκρι-λευκό */
-            --dark: #212529;         /* Σκούρο γκρι */
-            --success: #2ECC71;      /* Πράσινο επιτυχίας */
-            --warning: #F1C40F;      /* Κίτρινο προειδοποίησης */
-            --error: #E74C3C;        /* Κόκκινο σφάλματος */
+            /* 2025 Trendy Color Palette */
+            --primary: #7000FF;      /* Vibrant purple */
+            --secondary: #00E0FF;    /* Bright cyan */
+            --accent: #FF3DFC;       /* Electric pink */
+            --dark: #0A0118;         /* Deep violet-black */
+            --light: #F4F7FE;        /* Soft off-white */
+            --success: #00D0A3;      /* Mint green */
+            --warning: #FFB800;      /* Golden yellow */
+            --error: #FF3D6F;        /* Hot pink */
             
-            /* Παράμετροι διεπαφής */
-            --frame-thickness: 30px; /* Πάχος εξωτερικού πλαισίου */
-            --tick-length: 5px;      /* Μήκος γραμμών που προεξέχουν */
-            --tick-spacing: 40px;    /* Απόσταση μεταξύ γραμμών συντεταγμένων */
-            --sidebar-width: 340px;  /* Πλάτος πλευρικής στήλης */
-            --border-radius: 12px;   /* Στρογγυλεμένες γωνίες */
+            /* UI Parameters */
+            --frame-thickness: 24px;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --sidebar-width: 340px;
+            --blur-strength: 25px;
+            --grid-gap: 12px;
         }
         
-        body {
+        /* Base styles */
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--dark);
+            background-color: var(--light);
             overflow: hidden;
-            font-family: 'Segoe UI', Arial, sans-serif;
+            height: 100vh;
+            width: 100vw;
         }
         
-        /* Εξωτερικό πλαίσιο με γραμμές συντεταγμένων */
+        /* Neubrutalism border frame */
         .frame-container {
+            --grid-color: rgba(10, 1, 24, 0.05);
+            --line-thickness: 1.5px;
+            
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 9999;
             pointer-events: none;
+            z-index: 9998;
+            
+            /* Modern grid background */
+            background-image: 
+                linear-gradient(to right, var(--grid-color) var(--line-thickness), transparent var(--line-thickness)),
+                linear-gradient(to bottom, var(--grid-color) var(--line-thickness), transparent var(--line-thickness));
+            background-size: var(--grid-gap) var(--grid-gap);
+            
+            /* Border frame */
+            border: var(--frame-thickness) solid rgba(10, 1, 24, 0.7);
+            box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.2);
         }
         
-        .frame-border {
+        /* Edge marks */
+        .corner-mark {
             position: absolute;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        .corner-mark::before, .corner-mark::after {
+            content: '';
+            position: absolute;
+            background-color: var(--accent);
+        }
+        
+        .corner-mark::before {
+            width: 4px;
+            height: 30px;
+        }
+        
+        .corner-mark::after {
+            width: 30px;
+            height: 4px;
+        }
+        
+        .corner-tl {
+            top: var(--frame-thickness);
+            left: var(--frame-thickness);
+        }
+        
+        .corner-tr {
+            top: var(--frame-thickness);
+            right: var(--frame-thickness);
+        }
+        
+        .corner-bl {
+            bottom: var(--frame-thickness);
+            left: var(--frame-thickness);
+        }
+        
+        .corner-br {
+            bottom: var(--frame-thickness);
+            right: var(--frame-thickness);
+        }
+        
+        .corner-tl::before, .corner-tl::after {
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            border: var(--frame-thickness) solid rgba(67, 97, 238, 0.3);
-            box-sizing: border-box;
         }
         
-        /* Tick marks που προεξέχουν */
-        .tick-marks {
-            position: absolute;
+        .corner-tr::before {
             top: 0;
-            left: 0;
             right: 0;
+        }
+        
+        .corner-tr::after {
+            top: 0;
+            right: 0;
+            transform: translateX(-30px);
+        }
+        
+        .corner-bl::before {
             bottom: 0;
+            left: 0;
+            transform: translateY(-30px);
         }
         
-        .tick-mark {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.7);
-            z-index: 10000;
+        .corner-bl::after {
+            bottom: 0;
+            left: 0;
         }
         
-        .tick-mark.horizontal {
-            width: var(--tick-spacing);
-            height: 1px;
+        .corner-br::before {
+            bottom: 0;
+            right: 0;
+            transform: translateY(-30px);
         }
         
-        .tick-mark.vertical {
-            width: 1px;
-            height: var(--tick-spacing);
+        .corner-br::after {
+            bottom: 0;
+            right: 0;
+            transform: translateX(-30px);
         }
         
-        /* Κουμπί εμφάνισης μενού */
-        #menu-toggle {
+        /* Floating action buttons */
+        .fab {
             position: fixed;
-            top: calc(var(--frame-thickness) + 15px);
-            left: calc(var(--frame-thickness) + 15px);
-            z-index: 10000;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 10000;
+            box-shadow: 5px 5px 0px var(--dark);
+            border: 2px solid var(--dark);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        #menu-toggle:hover {
+        .fab:hover {
+            transform: translateY(-4px);
+            box-shadow: 7px 7px 0px var(--dark);
+        }
+        
+        .fab:active {
+            transform: translateY(0);
+            box-shadow: 3px 3px 0px var(--dark);
+        }
+        
+        .menu-fab {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            top: calc(var(--frame-thickness) + 20px);
+            left: calc(var(--frame-thickness) + 20px);
+        }
+        
+        /* Modern language selector */
+        .language-selector {
+            position: fixed;
+            top: calc(var(--frame-thickness) + 20px);
+            right: calc(var(--frame-thickness) + 20px);
+            z-index: 10000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .language-selector button {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(244, 247, 254, 0.1);
+            backdrop-filter: blur(var(--blur-strength));
+            -webkit-backdrop-filter: blur(var(--blur-strength));
+            border: 2px solid var(--dark);
+            color: var(--dark);
+            box-shadow: 3px 3px 0px var(--dark);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .language-selector button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+            box-shadow: 4px 4px 0px var(--dark);
         }
         
-        /* Πλευρική στήλη */
-        #sidebar {
+        .language-selector button.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+        
+        /* Glass sidebar */
+        .sidebar {
             position: fixed;
             top: var(--frame-thickness);
             left: var(--frame-thickness);
-            bottom: var(--frame-thickness);
+            height: calc(100vh - var(--frame-thickness) * 2);
             width: var(--sidebar-width);
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(244, 247, 254, 0.65);
+            backdrop-filter: blur(var(--blur-strength));
+            -webkit-backdrop-filter: blur(var(--blur-strength));
             z-index: 9990;
-            transform: translateX(-100%);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow-y: auto;
+            transform: translateX(calc(-100% - 20px));
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             flex-direction: column;
             gap: 20px;
-            padding: 20px;
-            padding-top: 70px;
-            box-shadow: 5px 0 30px rgba(0, 0, 0, 0.1);
-            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            padding: 25px;
+            padding-top: 90px;
+            border-right: 2px solid var(--dark);
+            box-shadow: 7px 0 25px rgba(0, 0, 0, 0.1);
         }
         
-        #sidebar.open {
+        .sidebar.open {
             transform: translateX(0);
         }
         
-        .panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border-radius: var(--border-radius);
+        /* Bento grid cards */
+        .bento-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: var(--radius-md);
             padding: 20px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 5px 5px 0px var(--dark);
+            border: 2px solid var(--dark);
             transition: all 0.3s ease;
         }
         
-        .panel:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            transform: translateY(-2px);
+        .bento-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 7px 7px 0px var(--dark);
         }
         
-        /* Logo MapLens */
+        /* Modern logo */
         .app-logo {
-            text-align: center;
-            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 15px;
+            perspective: 1000px;
+        }
+        
+        .logo-element {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            transform-style: preserve-3d;
+        }
+        
+        .logo-front {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            transform: translateZ(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(112, 0, 255, 0.5);
+        }
+        
+        .logo-middle {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transform: translateZ(5px);
+            box-shadow: 0 0 15px rgba(112, 0, 255, 0.3);
+        }
+        
+        .logo-back {
+            background: var(--dark);
+            transform: translateZ(0);
         }
         
         .logo-text {
-            font-size: 2.5em;
-            font-weight: bold;
-            font-style: italic;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 32px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            position: relative;
+            letter-spacing: -0.5px;
+            text-transform: lowercase;
         }
         
-        .logo-text::before {
-            content: "MapLens";
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            opacity: 0.1;
-            -webkit-text-fill-color: var(--primary);
-            z-index: -1;
-        }
-        
-        .logo-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            border-radius: 50%;
-            margin-right: 10px;
-            vertical-align: middle;
-            box-shadow: 0 3px 10px rgba(67, 97, 238, 0.3);
-        }
-        
-        .logo-icon svg {
-            width: 24px;
-            height: 24px;
-            fill: white;
-        }
-        
-        #status {
-            color: var(--dark);
-            font-size: 1em;
-            font-weight: 600;
-            text-align: center;
-            margin-top: 10px;
-        }
-        
-        #accuracy {
-            color: var(--dark);
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            margin: 10px auto;
-            display: block;
-            width: fit-content;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-        
-        #datetime {
+        .app-tagline {
+            font-size: 14px;
             color: var(--dark);
             opacity: 0.7;
             text-align: center;
-            margin-top: 5px;
-            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        
+        /* Status indicators */
+        .status-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--dark);
+        }
+        
+        .status-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+        
+        .status-text {
+            flex: 1;
+        }
+        
+        .status-value {
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 12px;
             letter-spacing: 0.5px;
         }
         
+        .accuracy-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-good {
+            background-color: rgba(0, 208, 163, 0.15);
+            color: var(--success);
+        }
+        
+        .status-medium {
+            background-color: rgba(255, 184, 0, 0.15);
+            color: var(--warning);
+        }
+        
+        .status-bad {
+            background-color: rgba(255, 61, 111, 0.15);
+            color: var(--error);
+        }
+        
+        /* Modern buttons */
         .btn {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 30px;
-            font-size: 0.95em;
+            border: 2px solid var(--dark);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            margin: 8px 0;
-            transition: all 0.3s ease;
-            display: block;
-            width: 100%;
+            margin: 5px 0;
+            box-shadow: 4px 4px 0px var(--dark);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
+            transform: translateX(-100%);
+            transition: transform 0.5s ease;
         }
         
         .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 6px 6px 0px var(--dark);
+        }
+        
+        .btn:hover::before {
+            transform: translateX(100%);
         }
         
         .btn:active {
-            transform: translateY(1px);
+            transform: translateY(-1px);
+            box-shadow: 2px 2px 0px var(--dark);
+        }
+        
+        .btn-alt {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--dark);
+        }
+        
+        /* Input styling */
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--dark);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 3px 3px 0px var(--dark);
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 5px 5px 0px var(--primary);
         }
         
         #file-input {
             display: none;
         }
         
-        #error-message {
+        /* Error message */
+        .error-message {
+            background: rgba(255, 61, 111, 0.15);
             color: var(--error);
-            background: rgba(231, 76, 60, 0.1);
-            border-radius: var(--border-radius);
-            padding: 12px 15px;
-            margin-top: 10px;
-            font-size: 0.9em;
+            border: 2px solid var(--error);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            font-size: 14px;
+            margin-top: 15px;
             display: none;
+            box-shadow: 4px 4px 0px var(--dark);
         }
-
-        /* Επιλογέας γλώσσας */
-        #language-selector {
+        
+        /* Copyright */
+        .copyright {
             position: fixed;
-            top: calc(var(--frame-thickness) + 15px);
+            bottom: calc(var(--frame-thickness) + 15px);
             right: calc(var(--frame-thickness) + 15px);
-            z-index: 10000;
-            display: flex;
-            gap: 5px;
-        }
-
-        #language-selector button {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            color: var(--dark);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        #language-selector button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        #language-selector button.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
-        }
-
-        /* Πληροφορίες δημιουργού */
-        #copyright {
-            position: fixed;
-            bottom: calc(var(--frame-thickness) + 10px);
-            right: calc(var(--frame-thickness) + 15px);
-            font-size: 0.8em;
+            font-size: 12px;
             color: var(--dark);
             opacity: 0.7;
             text-align: right;
             z-index: 10000;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            padding: 8px 15px;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 8px 12px;
+            border-radius: 40px;
+            border: 1px solid var(--dark);
+            box-shadow: 2px 2px 0px var(--dark);
             transition: all 0.3s ease;
         }
-
-        #copyright:hover {
+        
+        .copyright:hover {
             opacity: 1;
+            box-shadow: 3px 3px 0px var(--dark);
+            transform: translateY(-2px);
         }
-
-        #copyright a {
+        
+        .copyright a {
             color: var(--primary);
             text-decoration: none;
             transition: color 0.2s;
         }
-
-        #copyright a:hover {
+        
+        .copyright a:hover {
             color: var(--accent);
         }
-
-        /* Input styling */
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(67, 97, 238, 0.2);
-            border-radius: 30px;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-            font-size: 0.9em;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--secondary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.2);
-        }
-
-        /* Status colors */
-        .status-good {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: var(--dark);
-        }
-
-        .status-medium {
-            background-color: rgba(241, 196, 15, 0.2);
-            color: var(--dark);
-        }
-
-        .status-bad {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: var(--dark);
-        }
-
-        .divider {
-            color: var(--dark);
+        
+        /* 3D parallax floating elements */
+        .parallax-element {
+            position: fixed;
+            z-index: 9970;
+            pointer-events: none;
+            border-radius: 50%;
             opacity: 0.5;
-            margin: 10px 0;
-            text-align: center;
-            font-size: 0.9em;
+            filter: blur(30px);
         }
         
-        /* Προσαρμογή για μικρότερες οθόνες */
+        .blob-1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+            right: 20%;
+            top: 20%;
+        }
+        
+        .blob-2 {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
+            left: 15%;
+            bottom: 25%;
+        }
+        
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+            left: 30%;
+            top: 15%;
+        }
+        
+        /* Loading indicator */
+        .loading-indicator {
+            position: fixed;
+            bottom: calc(var(--frame-thickness) + 15px);
+            left: calc(var(--frame-thickness) + 15px);
+            z-index: 10000;
+            width: 60px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 40px;
+            border: 1px solid var(--dark);
+            box-shadow: 2px 2px 0px var(--dark);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-indicator.active {
+            opacity: 1;
+        }
+        
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(0.5);
+                opacity: 0.5;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
             :root {
-                --frame-thickness: 20px;
-                --sidebar-width: 280px;
+                --frame-thickness: 16px;
+                --sidebar-width: 300px;
             }
             
             .logo-text {
-                font-size: 2em;
+                font-size: 28px;
             }
             
             .btn {
-                padding: 10px 15px;
+                padding: 10px 14px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Εξωτερικό πλαίσιο με tick marks -->
-    <div class="frame-container">
-        <div class="frame-border"></div>
-        <div class="tick-marks" id="tick-marks"></div>
-    </div>
+    <!-- Floating blobs (3D parallax effect) -->
+    <div class="parallax-element blob-1" data-depth="0.2"></div>
+    <div class="parallax-element blob-2" data-depth="0.5"></div>
+    <div class="parallax-element blob-3" data-depth="0.3"></div>
     
-    <!-- Κουμπί εμφάνισης μενού -->
-    <button id="menu-toggle">☰</button>
+    <!-- Neo-brutalism frame -->
+    <div class="frame-container"></div>
     
-    <!-- Επιλογέας γλώσσας -->
-    <div id="language-selector">
+    <!-- Corner marks -->
+    <div class="corner-mark corner-tl"></div>
+    <div class="corner-mark corner-tr"></div>
+    <div class="corner-mark corner-bl"></div>
+    <div class="corner-mark corner-br"></div>
+    
+    <!-- Menu FAB -->
+    <div class="fab menu-fab" id="menu-toggle">☰</div>
+    
+    <!-- Language selector -->
+    <div class="language-selector">
         <button id="lang-el" class="active">EL</button>
         <button id="lang-en">EN</button>
     </div>
-
-    <!-- Πληροφορίες δημιουργού -->
-    <div id="copyright">
+    
+    <!-- Copyright -->
+    <div class="copyright">
         © 2025 Thomas G. Lagkas | <a href="mailto:Thomas.lagkas@outlook.com">Thomas.lagkas@outlook.com</a>
     </div>
     
-    <!-- Πλευρική στήλη με όλα τα πλαίσια -->
-    <div id="sidebar">
-        <div class="panel">
-            <div class="app-logo">
-                <span class="logo-icon">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                    </svg>
-                </span>
-                <span class="logo-text">MapLens</span>
+    <!-- Loading indicator -->
+    <div class="loading-indicator" id="loading-indicator">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="app-logo">
+            <div class="logo-container">
+                <div class="logo-element logo-back"></div>
+                <div class="logo-element logo-middle"></div>
+                <div class="logo-element logo-front">M</div>
             </div>
-            <div id="status">⌛ Αναμονή GPS...</div>
-            <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
-            <div id="datetime"></div>
+            <div class="logo-text">mapLens</div>
+            <div class="app-tagline" data-el="Δες τον κόσμο αλλιώς" data-en="See the world differently">Δες τον κόσμο αλλιώς</div>
         </div>
         
-        <div class="panel">
+        <div class="bento-card">
+            <div class="status-container">
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="gps-icon">⊕</i>
+                    </div>
+                    <div class="status-text" id="status">⌛ Αναμονή GPS...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="accuracy-icon">◉</i>
+                    </div>
+                    <div class="status-text">
+                        <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon">
+                        <i class="time-icon">◷</i>
+                    </div>
+                    <div class="status-text" id="datetime"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bento-card">
             <input type="file" id="file-input" accept=".kml">
             <button id="upload-btn" class="btn" data-el="Φόρτωση KML" data-en="Load KML">Φόρτωση KML</button>
-            <div class="divider" data-el="ή" data-en="or">ή</div>
-            <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
+            <div style="text-align:center; margin:8px 0; font-size:14px; opacity:0.7;" data-el="ή" data-en="or">ή</div>
+            <div class="input-group">
+                <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
+            </div>
             <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
         </div>
         
-        <div class="panel">
+        <div class="bento-card">
             <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
-            <button id="reset-btn" class="btn" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
+            <button id="reset-btn" class="btn btn-alt" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
         </div>
         
-        <div id="error-message" class="panel"></div>
+        <div id="error-message" class="error-message"></div>
     </div>
 
     <!-- A-Frame Scene -->
@@ -480,62 +760,50 @@
         const kmlContainer = document.getElementById('kml-container');
         const langEl = document.getElementById('lang-el');
         const langEn = document.getElementById('lang-en');
-        const tickMarksContainer = document.getElementById('tick-marks');
-
-        // Δημιουργία των tick marks
-        function createTickMarks() {
-            // Καθαρισμός προηγούμενων tick marks
-            tickMarksContainer.innerHTML = '';
+        const loadingIndicator = document.getElementById('loading-indicator');
+        
+        // Parallax effect for blobs
+        document.addEventListener('mousemove', function(e) {
+            const parallaxElements = document.querySelectorAll('.parallax-element');
+            const mouseX = e.clientX / window.innerWidth - 0.5;
+            const mouseY = e.clientY / window.innerHeight - 0.5;
             
-            // Υπολογισμός αριθμού tick marks
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-            const frameThickness = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--frame-thickness'));
-            const tickSpacing = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-spacing'));
-            const tickLength = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-length'));
+            parallaxElements.forEach(el => {
+                const depth = parseFloat(el.getAttribute('data-depth')) || 0.1;
+                const offsetX = mouseX * depth * 100;
+                const offsetY = mouseY * depth * 100;
+                gsap.to(el, {
+                    x: offsetX,
+                    y: offsetY,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+            });
+        });
+        
+        // Logo animation
+        function animateLogo() {
+            gsap.to(".logo-front", {
+                rotateY: "+=20",
+                rotateX: "-=10",
+                duration: 3,
+                ease: "sine.inOut",
+                repeat: -1,
+                yoyo: true
+            });
             
-            // Δημιουργία οριζόντιων tick marks (πάνω)
-            for (let i = frameThickness; i < windowWidth - frameThickness; i += tickSpacing) {
-                const tick = document.createElement('div');
-                tick.className = 'tick-mark horizontal';
-                tick.style.top = `${frameThickness}px`;
-                tick.style.left = `${i}px`;
-                tick.style.height = `${tickLength}px`;
-                tickMarksContainer.appendChild(tick);
-            }
-            
-            // Δημιουργία οριζόντιων tick marks (κάτω)
-            for (let i = frameThickness; i < windowWidth - frameThickness; i += tickSpacing) {
-                const tick = document.createElement('div');
-                tick.className = 'tick-mark horizontal';
-                tick.style.bottom = `${frameThickness}px`;
-                tick.style.left = `${i}px`;
-                tick.style.height = `${tickLength}px`;
-                tickMarksContainer.appendChild(tick);
-            }
-            
-            // Δημιουργία κάθετων tick marks (αριστερά)
-            for (let i = frameThickness; i < windowHeight - frameThickness; i += tickSpacing) {
-                const tick = document.createElement('div');
-                tick.className = 'tick-mark vertical';
-                tick.style.left = `${frameThickness}px`;
-                tick.style.top = `${i}px`;
-                tick.style.width = `${tickLength}px`;
-                tickMarksContainer.appendChild(tick);
-            }
-            
-            // Δημιουργία κάθετων tick marks (δεξιά)
-            for (let i = frameThickness; i < windowHeight - frameThickness; i += tickSpacing) {
-                const tick = document.createElement('div');
-                tick.className = 'tick-mark vertical';
-                tick.style.right = `${frameThickness}px`;
-                tick.style.top = `${i}px`;
-                tick.style.width = `${tickLength}px`;
-                tickMarksContainer.appendChild(tick);
-            }
+            gsap.to(".logo-middle", {
+                rotateY: "+=15",
+                rotateX: "-=7",
+                duration: 3.5,
+                ease: "sine.inOut",
+                repeat: -1,
+                yoyo: true,
+                delay: 0.2
+            });
         }
-
-        // Κείμενα μεταφράσεων
+        
+        // Translations
         const translations = {
             el: {
                 waiting: "⌛ Αναμονή GPS...",
@@ -576,40 +844,71 @@
                 showAR: "Show AR"
             }
         };
-
-        // Αρχικοποίηση
-        window.addEventListener('DOMContentLoaded', () => {
-            createTickMarks();
-            updateDateTime();
-        });
         
-        // Προσαρμογή σε αλλαγή μεγέθους παραθύρου
-        window.addEventListener('resize', createTickMarks);
-
-        // Toggle sidebar
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            menuToggle.textContent = sidebar.classList.contains('open') ? '✕' : '☰';
-        });
-
+        // Initialization
+        function init() {
+            // Start logo animation
+            animateLogo();
+            
+            // Update date/time
+            updateDateTime();
+            
+            // Setup event listeners
+            setupEventListeners();
+        }
+        
+        function setupEventListeners() {
+            // Menu toggle
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('open');
+                if (sidebar.classList.contains('open')) {
+                    gsap.to(menuToggle, {rotate: 45, duration: 0.3, ease: "back.out"});
+                } else {
+                    gsap.to(menuToggle, {rotate: 0, duration: 0.3, ease: "back.out"});
+                }
+            });
+            
+            // File upload
+            uploadBtn.addEventListener('click', () => {
+                // Add click animation
+                gsap.to(uploadBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', handleFileUpload);
+            
+            // URL loading
+            loadUrlBtn.addEventListener('click', handleUrlLoad);
+            
+            // AR toggling
+            toggleBtn.addEventListener('click', toggleARVisibility);
+            
+            // AR reset
+            resetBtn.addEventListener('click', resetAR);
+            
+            // Language switching
+            langEl.addEventListener('click', () => setLanguage('el'));
+            langEn.addEventListener('click', () => setLanguage('en'));
+            
+            // Button hover animations
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('mouseenter', () => {
+                    gsap.to(btn, {y: -4, boxShadow: "6px 6px 0px #0A0118", duration: 0.2, ease: "power1.out"});
+                });
+                
+                btn.addEventListener('mouseleave', () => {
+                    gsap.to(btn, {y: 0, boxShadow: "4px 4px 0px #0A0118", duration: 0.2, ease: "power1.in"});
+                });
+            });
+        }
+        
         // Date & time
         function updateDateTime() {
             const now = new Date();
             datetimeEl.textContent = now.toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
+            setTimeout(updateDateTime, 1000);
         }
-        setInterval(updateDateTime, 1000);
-
-        // Event listeners
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileUpload);
-        loadUrlBtn.addEventListener('click', handleUrlLoad);
-        toggleBtn.addEventListener('click', toggleARVisibility);
-        resetBtn.addEventListener('click', resetAR);
         
-        // Language switchers
-        langEl.addEventListener('click', () => setLanguage('el'));
-        langEn.addEventListener('click', () => setLanguage('en'));
-
         // Set language
         function setLanguage(lang) {
             currentLanguage = lang;
@@ -617,6 +916,20 @@
             // Update active button
             langEl.classList.toggle('active', lang === 'el');
             langEn.classList.toggle('active', lang === 'en');
+            
+            // Animate language change
+            gsap.to('.language-selector button', {
+                scale: 0.9, 
+                duration: 0.1,
+                stagger: 0.05,
+                onComplete: () => {
+                    gsap.to('.language-selector button', {
+                        scale: 1, 
+                        duration: 0.2,
+                        stagger: 0.05
+                    });
+                }
+            });
             
             // Update all elements with data-el and data-en attributes
             document.querySelectorAll('[data-el][data-en]').forEach(el => {
@@ -642,16 +955,21 @@
             
             // Update toggle button text
             toggleBtn.textContent = arVisible ? translations[lang].hideAR : translations[lang].showAR;
-            
-            // Update datetime format
-            updateDateTime();
         }
-
+        
+        // Show loading
+        function showLoading(show) {
+            loadingIndicator.classList.toggle('active', show);
+        }
+        
         // Handle KML file upload
         function handleFileUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
+            
+            showLoading(true);
             statusEl.textContent = translations[currentLanguage].loading;
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
@@ -661,17 +979,26 @@
                     } else {
                         renderPolygons(polygons);
                         statusEl.textContent = translations[currentLanguage].loaded;
+                        
+                        // Success animation
+                        gsap.fromTo('.bento-card', 
+                            {scale: 0.98, opacity: 0.9}, 
+                            {scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "elastic.out(1, 0.5)"}
+                        );
                     }
                 } catch (err) {
                     showError(translations[currentLanguage].parseError + err.message);
+                } finally {
+                    showLoading(false);
                 }
             };
             reader.onerror = function() {
                 showError(translations[currentLanguage].readError);
+                showLoading(false);
             };
             reader.readAsText(file);
         }
-
+        
         // Handle KML URL loading
         function handleUrlLoad() {
             const url = urlInput.value.trim();
@@ -679,7 +1006,13 @@
                 showError(translations[currentLanguage].urlRequired);
                 return;
             }
+            
+            showLoading(true);
             statusEl.textContent = translations[currentLanguage].loading;
+            
+            // Button animation
+            gsap.to(loadUrlBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
+            
             fetch(url)
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -693,16 +1026,25 @@
                         } else {
                             renderPolygons(polygons);
                             statusEl.textContent = translations[currentLanguage].loaded;
+                            
+                            // Success animation
+                            gsap.fromTo('.bento-card', 
+                                {scale: 0.98, opacity: 0.9}, 
+                                {scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "elastic.out(1, 0.5)"}
+                            );
                         }
                     } catch (err) {
                         showError(translations[currentLanguage].parseError + err.message);
+                    } finally {
+                        showLoading(false);
                     }
                 })
                 .catch(error => {
                     showError(translations[currentLanguage].downloadError + error.message);
+                    showLoading(false);
                 });
         }
-
+        
         // Parse KML to extract polygons, lines, points
         function parseKML(kmlText) {
             const parser = new DOMParser();
@@ -775,7 +1117,7 @@
             }
             return coordinates;
         }
-
+        
         // Render polygons, lines, points
         function renderPolygons(polygons) {
             kmlContainer.innerHTML = '';
@@ -800,7 +1142,7 @@
                 line.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#4361EE', // Primary color
+                    color: '#7000FF', // Primary color
                     opacity: 0.85,
                     width: 6
                 });
@@ -826,7 +1168,7 @@
                 height: maxDistance * 2
             });
             fill.setAttribute('material', {
-                color: '#4CC9F0', // Secondary color
+                color: '#00E0FF', // Secondary color
                 opacity: 0.25,
                 transparent: true,
                 side: 'double'
@@ -840,7 +1182,7 @@
             text.setAttribute('scale', '7 7 7');
             text.setAttribute('look-at', '[gps-camera]');
             text.setAttribute('align', 'center');
-            text.setAttribute('color', '#4361EE'); // Primary color
+            text.setAttribute('color', '#7000FF'); // Primary color
             text.setAttribute('position', '0 12 0');
             kmlContainer.appendChild(text);
         }
@@ -855,7 +1197,7 @@
                 lineEntity.setAttribute('line', {
                     start: '0 0 0',
                     end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#F72585', // Accent color
+                    color: '#FF3DFC', // Accent color
                     opacity: 0.9,
                     width: 4
                 });
@@ -870,7 +1212,7 @@
                 text.setAttribute('scale', '6 6 6');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#4361EE'); // Primary color
+                text.setAttribute('color', '#7000FF'); // Primary color
                 text.setAttribute('position', '0 10 0');
                 kmlContainer.appendChild(text);
             }
@@ -881,7 +1223,7 @@
                 const p = point.points[0];
                 const sphere = document.createElement('a-sphere');
                 sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', '#F72585'); // Accent color
+                sphere.setAttribute('color', '#FF3DFC'); // Accent color
                 sphere.setAttribute('radius', '2.5');
                 sphere.setAttribute('position', '0 0 0');
                 kmlContainer.appendChild(sphere);
@@ -891,7 +1233,7 @@
                 text.setAttribute('scale', '5 5 5');
                 text.setAttribute('look-at', '[gps-camera]');
                 text.setAttribute('align', 'center');
-                text.setAttribute('color', '#4361EE'); // Primary color
+                text.setAttribute('color', '#7000FF'); // Primary color
                 text.setAttribute('position', '0 8 0');
                 kmlContainer.appendChild(text);
             }
@@ -904,21 +1246,40 @@
             toggleBtn.textContent = arVisible ? 
                 translations[currentLanguage].hideAR : 
                 translations[currentLanguage].showAR;
+                
+            // Button animation
+            gsap.to(toggleBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
         }
         
         // Reset AR scene
         function resetAR() {
             kmlContainer.innerHTML = '';
             statusEl.textContent = translations[currentLanguage].reset;
+            
+            // Button animation
+            gsap.to(resetBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
         }
         
         // Show error message
         function showError(message) {
             errorMessageEl.textContent = message;
             errorMessageEl.style.display = 'block';
+            
+            // Animation
+            gsap.fromTo(errorMessageEl, 
+                {y: -10, opacity: 0}, 
+                {y: 0, opacity: 1, duration: 0.3, ease: "back.out"}
+            );
+            
             setTimeout(() => {
-                errorMessageEl.style.display = 'none';
+                gsap.to(errorMessageEl, {
+                    opacity: 0, 
+                    y: 10, 
+                    duration: 0.3, 
+                    onComplete: () => { errorMessageEl.style.display = 'none'; }
+                });
             }, 5000);
+            
             statusEl.textContent = translations[currentLanguage].error;
         }
         
@@ -955,6 +1316,8 @@
         
         // AR scene initialization and location handling
         document.addEventListener('DOMContentLoaded', () => {
+            init();
+            
             const camera = document.querySelector('a-camera');
             camera.addEventListener('gps-camera-update-position', e => {
                 userPosition = e.detail.position;
@@ -969,8 +1332,8 @@
                     currentAccuracy = acc;
                     accuracyEl.textContent = `${translations[currentLanguage].accuracy}±${currentAccuracy.toFixed(2)}${translations[currentLanguage].meters}`;
                     
-                    // Set appropriate color class based on accuracy
-                    accuracyEl.className = ''; // Remove existing classes
+                    // Update accuracy class
+                    accuracyEl.className = 'accuracy-badge';
                     if (currentAccuracy <= 10) {
                         accuracyEl.classList.add('status-good');
                     } else if (currentAccuracy <= 20) {
@@ -980,7 +1343,7 @@
                     }
                 } else {
                     accuracyEl.textContent = translations[currentLanguage].notAvailable;
-                    accuracyEl.className = '';
+                    accuracyEl.className = 'accuracy-badge';
                 }
             });
         });
