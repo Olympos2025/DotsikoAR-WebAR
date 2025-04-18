@@ -11,52 +11,162 @@
         :root {
             --olympos-blue: #1f3b4d;
             --olympos-grey: #a6adb4;
-            --panel-radius: 14px;
-            --panel-border: 4px solid var(--olympos-blue);
+            --panel-border: 2px solid var(--olympos-blue);
+            --frame-thickness: 10px;
+            --tick-length: 8px;
+            --tick-spacing: 40px;
+            --sidebar-width: 340px;
         }
+        
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            overflow: hidden;
         }
-        body {
-            min-height: 100vh;
-        }
-        /* Εξωτερικό πλαίσιο */
+        
+        /* Εξωτερικό πλαίσιο με γραμμές συντεταγμένων */
         body::before {
             content: "";
             position: fixed;
             z-index: 9999;
             top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
-            border: var(--panel-border);
-            border-radius: var(--panel-radius);
+            border: var(--frame-thickness) solid rgba(31, 59, 77, 0.5); /* Διαφανές πλαίσιο */
             box-sizing: border-box;
         }
-        #ui-container {
+        
+        /* Οριζόντιες γραμμές πάνω */
+        body::after {
+            content: "";
             position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
+            z-index: 9999;
+            top: 0; left: 0; right: 0;
+            height: var(--frame-thickness);
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(
+                    to right,
+                    transparent,
+                    transparent calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
+                );
+            background-size: var(--tick-spacing) 100%;
+        }
+        
+        /* Κάθετες γραμμές αριστερά */
+        .left-ticks {
+            content: "";
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0; bottom: 0;
+            width: var(--frame-thickness);
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(
+                    to bottom,
+                    transparent,
+                    transparent calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
+                );
+            background-size: 100% var(--tick-spacing);
+        }
+        
+        /* Οριζόντιες γραμμές κάτω */
+        .bottom-ticks {
+            content: "";
+            position: fixed;
+            z-index: 9999;
+            bottom: 0; left: 0; right: 0;
+            height: var(--frame-thickness);
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(
+                    to right,
+                    transparent,
+                    transparent calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
+                );
+            background-size: var(--tick-spacing) 100%;
+        }
+        
+        /* Κάθετες γραμμές δεξιά */
+        .right-ticks {
+            content: "";
+            position: fixed;
+            z-index: 9999;
+            top: 0; right: 0; bottom: 0;
+            width: var(--frame-thickness);
+            pointer-events: none;
+            background-image: 
+                repeating-linear-gradient(
+                    to bottom,
+                    transparent,
+                    transparent calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
+                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
+                );
+            background-size: 100% var(--tick-spacing);
+        }
+        
+        /* Κουμπί εμφάνισης μενού */
+        #menu-toggle {
+            position: fixed;
+            top: calc(var(--frame-thickness) + 10px);
+            left: calc(var(--frame-thickness) + 10px);
+            z-index: 10000;
+            background-color: var(--olympos-blue);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Πλευρική στήλη */
+        #sidebar {
+            position: fixed;
+            top: var(--frame-thickness);
+            left: var(--frame-thickness);
+            bottom: var(--frame-thickness);
+            width: var(--sidebar-width);
+            background-color: rgba(255, 255, 255, 0.9);
+            z-index: 9990;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            max-width: 340px;
+            gap: 15px;
+            padding: 15px;
+            padding-top: 60px;
         }
+        
+        #sidebar.open {
+            transform: translateX(0);
+        }
+        
         .panel {
-            background: rgba(255,255,255,0.93);
+            background: rgba(255, 255, 255, 0.9);
             border: var(--panel-border);
-            border-radius: var(--panel-radius);
-            box-shadow: 0 2px 8px rgba(31,59,77,0.10);
-            padding: 16px 18px 12px 18px;
+            padding: 15px;
             font-family: 'Segoe UI', Arial, sans-serif;
         }
+        
         #logo {
             display: block;
-            max-width: 210px;
+            max-width: 240px;
             margin: 0 auto 10px auto;
         }
+        
         #app-name {
             color: var(--olympos-blue);
             font-weight: bold;
@@ -65,17 +175,19 @@
             letter-spacing: 1.5px;
             margin-bottom: 6px;
         }
+        
         #status {
             color: var(--olympos-blue);
             font-size: 1em;
             font-weight: bold;
             text-align: center;
         }
+        
         #accuracy {
             color: var(--olympos-blue);
             background: var(--olympos-grey);
             padding: 4px 8px;
-            border-radius: 8px;
+            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
             font-size: 1em;
             margin: 7px auto 0 auto;
             display: block;
@@ -83,6 +195,7 @@
             font-weight: bold;
             letter-spacing: 0.5px;
         }
+        
         #datetime {
             color: var(--olympos-grey);
             text-align: center;
@@ -90,63 +203,74 @@
             font-size: 0.95em;
             letter-spacing: 0.5px;
         }
+        
         .btn {
             background-color: var(--olympos-blue);
             color: white;
             border: none;
             padding: 8px 13px;
-            border-radius: 7px;
+            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
             font-size: 1em;
             font-weight: 500;
             cursor: pointer;
             margin: 3px 0;
             transition: background 0.2s;
+            display: block;
+            width: 100%;
         }
+        
         .btn:hover {
             background-color: #284c64;
         }
+        
         #file-input {
             display: none;
         }
+        
         #error-message {
             color: #b10000;
             background: #fff0f0;
             border: 1.5px solid #b10000;
-            border-radius: 8px;
+            border-radius: 0; /* Χωρίς στρογγυλεμένες γωνίες */
             padding: 8px 10px;
             margin-top: 7px;
             font-size: 1em;
             display: none;
         }
-        /* Responsive */
-        @media (max-width: 600px) {
-            #ui-container { max-width: 96vw; left: 2vw; top: 2vw;}
-            .panel { padding: 10px 8px 8px 8px; }
-            #logo { max-width: 120px; }
-        }
     </style>
 </head>
 <body>
-    <!-- UI Elements -->
-    <div id="ui-container">
-        <div id="info-panel" class="panel">
-            <img id="logo" src="Olympos-Logo-EN-800px.jpg" alt="Olympos Consulting">
+    <!-- Στοιχεία για τις γραμμές συντεταγμένων -->
+    <div class="left-ticks"></div>
+    <div class="bottom-ticks"></div>
+    <div class="right-ticks"></div>
+    
+    <!-- Κουμπί εμφάνισης μενού -->
+    <button id="menu-toggle">☰</button>
+    
+    <!-- Πλευρική στήλη με όλα τα πλαίσια -->
+    <div id="sidebar">
+        <div class="panel">
+            <img id="logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgMjUwIj48cGF0aCBkPSJNMzMuNSAxOTcuOGMwLTM2LjEgMjkuMy02NS4zIDY1LjQtNjUuM3M2NS40IDI5LjIgNjUuNCA2NS4zYzAgMzYuMS0yOS4zIDY1LjMtNjUuNCA2NS4zcy02NS40LTI5LjItNjUuNC02NS4zem0xMDguMSAwYzAtMjMuNS0xOS4yLTQyLjYtNDIuNy00Mi42cy00Mi43IDE5LjEtNDIuNyA0Mi42YzAgMjMuNSAxOS4yIDQyLjYgNDIuNyA0Mi42czQyLjctMTkuMSA0Mi43LTQyLjZ6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTE5Mi41IDk4LjR2MTYyLjloMjIuN1YxNTQuNmw1My42IDc3LjcgNTYuOC04MS42djExMC42aDIyLjdWOTguNGgtMjIuN2wtNTYuOCA4NS40LTUzLjYtODUuNGgtMjIuN3oiIGZpbGw9IiMwMzI2MzkiLz48cGF0aCBkPSJNMzY1IDk4LjR2MTYyLjloOTUuNnYtMjIuN2gtNzIuOXYtNDcuM2g2Ni44di0yMi43aC02Ni44di00Ny4zaDcyLjlWOTguNEgzNjV6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTQ3Ny4xIDk4LjR2MTYyLjloMjIuN1YxOTcuOGw0Mi43LTQ3LjMgNDIuNyA0Ny4zdjYzLjRoMjIuN1Y5OC40SDU4NXY3NS4xbC00Mi43LTQ3LjMtNDIuNyA0Ny4zVjk4LjRoLTIyLjV6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTYyNC4yIDk4LjR2MTYyLjloOTUuNnYtMjIuN2gtNzIuOXYtNDcuM2g2Ni44di0yMi43aC02Ni44di00Ny4zaDcyLjlWOTguNGgtOTUuNnoiIGZpbGw9IiMwMzI2MzkiLz48cGF0aCBkPSJNNzM2LjMgOTguNHYxNjIuOWgyMi43di0xNDAuMmg0NS4ybC0xMi4yLTIyLjdoLTU1Ljd6IiBmaWxsPSIjMDMyNjM5Ii8+PHBhdGggZD0iTTMuNSAxNS4zbDEyNiA2NCA2NC00My4zLTU2LjQtMjcuNEwzLjUgMTUuM3oiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTY0LjcgOC43bDEwMy44IDQxLjMgNzQuOS0yMUwxNjcgNi43IDY0LjcgOC43eiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMTQyIDBsMTI2IDgwLTkwIDQwLTg0LjgtNTIuN0wxNDIgMHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTI0Mi44IDkuM2w2Mi4xIDU4LjcgODcuMyAyLjctNDUuMy01Mi03NS4zLTkuNHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTI2OCAyOGwxMjcuMyA3MC4zLTg1LjMgMjQuNy00OC03MC43TDI2OCAyOHoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzY2NiIgc3Ryb2tlLXdpZHRoPSI2Ii8+PHBhdGggZD0iTTM1MC42IDguN2wzMS40IDE4IDQ1LjQtOC03LjctMTgtNjkuMS04eiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNjY2IiBzdHJva2Utd2lkdGg9IjYiLz48cGF0aCBkPSJNMzcxLjMgOC43bC0xNC43IDMzLjMgMjcuMy0xNS4zLTEyLjYtMTh6IiBmaWxsPSJub25lIiBzdHJva2U9IiM2NjYiIHN0cm9rZS13aWR0aD0iNiIvPjx0ZXh0IHg9IjgwIiB5PSIyNDAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIzMCIgZmlsbD0iIzk5OSI+Q09OU1VMVElORzwvdGV4dD48L3N2Zz4=" alt="Olympos Consulting">
             <div id="app-name">DotsikoAR</div>
             <div id="status">⌛ Αναμονή GPS...</div>
             <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
             <div id="datetime"></div>
         </div>
+        
         <div class="panel">
             <input type="file" id="file-input" accept=".kml">
             <button id="upload-btn" class="btn">Φόρτωση KML</button>
-            <div style="color:var(--olympos-grey);margin:6px 0 3px 0;font-size:0.95em;">ή</div>
-            <input type="text" id="url-input" placeholder="URL του KML αρχείου" style="width:90%;border:1px solid var(--olympos-grey);border-radius:5px;padding:4px;">
+            <div style="color:var(--olympos-grey);margin:6px 0 3px 0;font-size:0.95em;text-align:center;">ή</div>
+            <input type="text" id="url-input" placeholder="URL του KML αρχείου" style="width:100%;border:1px solid var(--olympos-grey);padding:4px;box-sizing:border-box;margin-bottom:5px;">
             <button id="load-url-btn" class="btn">Φόρτωση από URL</button>
         </div>
+        
         <div class="panel">
             <button id="toggle-btn" class="btn">Εμφάνιση/Απόκρυψη AR</button>
             <button id="reset-btn" class="btn">Επαναφορά</button>
         </div>
+        
         <div id="error-message" class="panel"></div>
     </div>
 
@@ -165,7 +289,10 @@
         let arVisible = true;
         let currentAccuracy = null;
         let userPosition = null;
+        
         // DOM Elements
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
         const fileInput = document.getElementById('file-input');
         const uploadBtn = document.getElementById('upload-btn');
         const urlInput = document.getElementById('url-input');
@@ -177,6 +304,12 @@
         const datetimeEl = document.getElementById('datetime');
         const errorMessageEl = document.getElementById('error-message');
         const kmlContainer = document.getElementById('kml-container');
+
+        // Toggle sidebar
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            menuToggle.textContent = sidebar.classList.contains('open') ? '✕' : '☰';
+        });
 
         // Date & time
         function updateDateTime() {
@@ -303,6 +436,7 @@
             }
             return polygons;
         }
+        
         function parseCoordinateString(coordsText) {
             const coordinates = [];
             const coordPairs = coordsText.split(/\s+/);
@@ -334,6 +468,7 @@
                 }
             });
         }
+        
         function renderPolygon(polygon, index) {
             const points = polygon.points;
             for (let i = 0; i < points.length; i++) {
@@ -384,6 +519,7 @@
             text.setAttribute('position', '0 12 0');
             kmlContainer.appendChild(text);
         }
+        
         function renderLine(line, index) {
             const points = line.points;
             for (let i = 0; i < points.length - 1; i++) {
@@ -413,6 +549,7 @@
                 kmlContainer.appendChild(text);
             }
         }
+        
         function renderPoint(point, index) {
             if (point.points.length > 0) {
                 const p = point.points[0];
@@ -433,17 +570,20 @@
                 kmlContainer.appendChild(text);
             }
         }
+        
         // Toggle AR visibility
         function toggleARVisibility() {
             arVisible = !arVisible;
             kmlContainer.setAttribute('visible', arVisible);
             toggleBtn.textContent = arVisible ? 'Απόκρυψη AR' : 'Εμφάνιση AR';
         }
+        
         // Reset AR scene
         function resetAR() {
             kmlContainer.innerHTML = '';
             statusEl.textContent = "AR επαναφέρθηκε";
         }
+        
         // Show error message
         function showError(message) {
             errorMessageEl.textContent = message;
@@ -453,7 +593,8 @@
             }, 5000);
             statusEl.textContent = "❌ Σφάλμα!";
         }
-        // Convert geo coordinates to meters relative to a reference point
+        
+        // Convert geo coordinates to meters
         function geoToMeters(lat1, lon1, lat2, lon2) {
             const R = 6378137;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -472,6 +613,7 @@
             const z = distance * Math.cos(bearing);
             return { x, y: 0, z };
         }
+        
         function geoDistance(lat1, lon1, lat2, lon2) {
             const R = 6378137;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -482,6 +624,7 @@
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             return R * c;
         }
+        
         // AR scene initialization and location handling
         document.addEventListener('DOMContentLoaded', () => {
             const camera = document.querySelector('a-camera');
