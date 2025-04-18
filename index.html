@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <title>DotsikoAR WebAR</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
         #loading {
@@ -17,11 +16,18 @@
             z-index: 10000;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
+        #fileInput {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 10000;
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
-    <div id="loading">🔃 Φόρτωση GPS...</div>
-
+    <div id="loading">⌛ Ενεργοποίηση GPS...</div>
+    <input type="file" id="fileInput" accept=".kml" style="display: none;">
+    
     <a-scene 
         vr-mode-ui="enabled: false"
         arjs="sourceType: webcam; debugUIEnabled: false;"
@@ -29,90 +35,93 @@
         embedded>
 
         <a-camera gps-camera rotation-reader></a-camera>
-        <a-entity id="polygons-container"></a-entity>
+        <a-entity id="kml-container"></a-entity>
     </a-scene>
 
     <script>
-    // Προσθήκη Eruda για debugging
-    document.write('<script src="https://cdn.jsdelivr.net/npm/eruda"><\/script>');
+    // Eruda for debugging
+    document.write('<script src="https://cdn.jsdelivr.net/npm/eruda"></script>');
     eruda.init();
 
-    let userPosition = null;
+    document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 
-    // Φόρτωση KML
-    async function loadKML(url) {
-        try {
-            const response = await fetch(url);
-            const kmlText = await response.text();
-            const parser = new DOMParser();
-            const kmlDoc = parser.parseFromString(kmlText, "text/xml");
-            
-            return Array.from(kmlDoc.querySelectorAll('Placemark')).map(placemark => {
-                const coords = placemark.querySelector('coordinates').textContent.trim();
-                return coords.split(/\s+/).map(coord => {
-                    const [lon, lat] = coord.split(',').map(Number);
-                    return { lat, lon };
-                });
-            });
-        } catch (error) {
-            console.error("Σφάλμα φόρτωσης KML:", error);
-            alert("Σφάλμα φόρτωσης KML αρχείου");
-        }
-    }
-
-    // Μετατροπή γεωγραφικών σε μέτρα
-    function geoToMeters(lat1, lon1, lat2, lon2) {
-        const R = 6378137;
-        const dLat = (lat2 - lat1) * Math.PI/180;
-        const dLon = (lon2 - lon1) * Math.PI/180;
-        return {
-            x: R * dLon * Math.cos(lat1 * Math.PI/180),
-            z: R * dLat
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            parseKML(e.target.result)
+                .then(polygons => renderPolygons(polygons))
+                .catch(err => console.error(err));
         };
+        reader.readAsText(file);
     }
 
-    // Δημιουργία AR περιεχομένου
-    async function initAR(position) {
-        userPosition = position.coords;
-        document.getElementById('loading').textContent = "Φόρτωση KML...";
-        
-        const polygons = await loadKML('thermi.kml');
+    async function parseKML(kmlText) {
+        const parser = new DOMParser();
+        const kmlDoc = parser.parseFromString(kmlText, "text/xml");
+        return Array.from(kmlDoc.querySelectorAll('Placemark')).map(placemark => {
+            const coords = placemark.querySelector('coordinates').textContent.trim();
+            return coords.split(/\s+/).map(pair => {
+                const [lon, lat] = pair.split(',').map(Number);
+                return { lat, lon };
+            });
+        }).filter(polygon => polygon.length > 0);
+    }
+
+    function renderPolygons(polygons) {
+        const container = document.getElementById('kml-container');
+        container.innerHTML = '';
         
         polygons.forEach(polygon => {
-            const container = document.createElement('a-entity');
+            const entity = document.createElement('a-entity');
             
-            // Δημιουργία πολυγώνου
+            // Γραμμές ορίου
             polygon.forEach((point, index) => {
                 const nextPoint = polygon[(index + 1) % polygon.length];
-                const {x, z} = geoToMeters(userPosition.latitude, userPosition.longitude, point.lat, point.lon);
-                const {x: x2, z: z2} = geoToMeters(userPosition.latitude, userPosition.longitude, nextPoint.lat, nextPoint.lon);
-                
                 const line = document.createElement('a-entity');
                 line.setAttribute('line', {
-                    start: `${x} 0 ${z}`,
-                    end: `${x2} 0 ${z2}`,
+                    start: `${point.lon} 0 ${point.lat}`,
+                    end: `${nextPoint.lon} 0 ${nextPoint.lat}`,
                     color: '#FF0000',
                     opacity: 0.8
                 });
-                
-                container.appendChild(line);
+                entity.appendChild(line);
             });
 
-            document.querySelector('#polygons-container').appendChild(container);
+            // Ημιδιαφανής επιφάνεια
+            const fill = document.createElement('a-entity');
+            fill.setAttribute('geometry', {
+                primitive: 'plane',
+                width: Math.abs(polygon[0].lon - polygon[1].lon),
+                height: Math.abs(polygon[0].lat - polygon[1].lat)
+            });
+            fill.setAttribute('material', {
+                color: '#00FF00',
+                opacity: 0.3,
+                transparent: true
+            });
+            fill.setAttribute('position', `${polygon[0].lon} 0 ${polygon[0].lat}`);
+            entity.appendChild(fill);
+
+            container.appendChild(entity);
         });
-        
-        document.getElementById('loading').style.display = 'none';
     }
 
-    // Εκκίνηση εφαρμογής
+    // GPS initialization
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            position => initAR(position),
-            error => alert("Χρειάζεται άδεια GPS"),
+            position => {
+                document.getElementById('loading').textContent = "✅ GPS ενεργό";
+                startARSession(position.coords);
+            },
+            error => alert("Απαιτείται άδεια GPS"),
             { enableHighAccuracy: true, timeout: 10000 }
         );
-    } else {
-        alert("Η συσκευή σας δεν υποστηρίζει geolocation");
+    }
+
+    function startARSession(coords) {
+        // AR.js already initialized via a-scene
+        document.getElementById('loading').style.display = 'none';
     }
     </script>
 </body>
