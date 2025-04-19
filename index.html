@@ -1,1352 +1,291 @@
 <!DOCTYPE html>
-<html lang="el">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>MapLens</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    
-    <!-- A-Frame & AR.js -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    
-    <!-- GSAP για animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        :root {
-            /* 2025 Trendy Color Palette */
-            --primary: #7000FF;      /* Vibrant purple */
-            --secondary: #00E0FF;    /* Bright cyan */
-            --accent: #FF3DFC;       /* Electric pink */
-            --dark: #0A0118;         /* Deep violet-black */
-            --light: #F4F7FE;        /* Soft off-white */
-            --success: #00D0A3;      /* Mint green */
-            --warning: #FFB800;      /* Golden yellow */
-            --error: #FF3D6F;        /* Hot pink */
-            
-            /* UI Parameters */
-            --frame-thickness: 24px;
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --radius-lg: 24px;
-            --radius-xl: 32px;
-            --sidebar-width: 340px;
-            --blur-strength: 25px;
-            --grid-gap: 12px;
-        }
-        
-        /* Base styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--dark);
-            background-color: var(--light);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-        
-        /* Neubrutalism border frame */
-        .frame-container {
-            --grid-color: rgba(10, 1, 24, 0.05);
-            --line-thickness: 1.5px;
-            
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 9998;
-            
-            /* Modern grid background */
-            background-image: 
-                linear-gradient(to right, var(--grid-color) var(--line-thickness), transparent var(--line-thickness)),
-                linear-gradient(to bottom, var(--grid-color) var(--line-thickness), transparent var(--line-thickness));
-            background-size: var(--grid-gap) var(--grid-gap);
-            
-            /* Border frame */
-            border: var(--frame-thickness) solid rgba(10, 1, 24, 0.7);
-            box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.2);
-        }
-        
-        /* Edge marks */
-        .corner-mark {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        
-        .corner-mark::before, .corner-mark::after {
-            content: '';
-            position: absolute;
-            background-color: var(--accent);
-        }
-        
-        .corner-mark::before {
-            width: 4px;
-            height: 30px;
-        }
-        
-        .corner-mark::after {
-            width: 30px;
-            height: 4px;
-        }
-        
-        .corner-tl {
-            top: var(--frame-thickness);
-            left: var(--frame-thickness);
-        }
-        
-        .corner-tr {
-            top: var(--frame-thickness);
-            right: var(--frame-thickness);
-        }
-        
-        .corner-bl {
-            bottom: var(--frame-thickness);
-            left: var(--frame-thickness);
-        }
-        
-        .corner-br {
-            bottom: var(--frame-thickness);
-            right: var(--frame-thickness);
-        }
-        
-        .corner-tl::before, .corner-tl::after {
-            top: 0;
-            left: 0;
-        }
-        
-        .corner-tr::before {
-            top: 0;
-            right: 0;
-        }
-        
-        .corner-tr::after {
-            top: 0;
-            right: 0;
-            transform: translateX(-30px);
-        }
-        
-        .corner-bl::before {
-            bottom: 0;
-            left: 0;
-            transform: translateY(-30px);
-        }
-        
-        .corner-bl::after {
-            bottom: 0;
-            left: 0;
-        }
-        
-        .corner-br::before {
-            bottom: 0;
-            right: 0;
-            transform: translateY(-30px);
-        }
-        
-        .corner-br::after {
-            bottom: 0;
-            right: 0;
-            transform: translateX(-30px);
-        }
-        
-        /* Floating action buttons */
-        .fab {
-            position: fixed;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 10000;
-            box-shadow: 5px 5px 0px var(--dark);
-            border: 2px solid var(--dark);
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .fab:hover {
-            transform: translateY(-4px);
-            box-shadow: 7px 7px 0px var(--dark);
-        }
-        
-        .fab:active {
-            transform: translateY(0);
-            box-shadow: 3px 3px 0px var(--dark);
-        }
-        
-        .menu-fab {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            top: calc(var(--frame-thickness) + 20px);
-            left: calc(var(--frame-thickness) + 20px);
-        }
-        
-        /* Modern language selector */
-        .language-selector {
-            position: fixed;
-            top: calc(var(--frame-thickness) + 20px);
-            right: calc(var(--frame-thickness) + 20px);
-            z-index: 10000;
-            display: flex;
-            gap: 10px;
-        }
-        
-        .language-selector button {
-            width: 50px;
-            height: 50px;
-            border-radius: var(--radius-sm);
-            font-weight: 600;
-            cursor: pointer;
-            background: rgba(244, 247, 254, 0.1);
-            backdrop-filter: blur(var(--blur-strength));
-            -webkit-backdrop-filter: blur(var(--blur-strength));
-            border: 2px solid var(--dark);
-            color: var(--dark);
-            box-shadow: 3px 3px 0px var(--dark);
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .language-selector button:hover {
-            transform: translateY(-2px);
-            box-shadow: 4px 4px 0px var(--dark);
-        }
-        
-        .language-selector button.active {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-        }
-        
-        /* Glass sidebar */
-        .sidebar {
-            position: fixed;
-            top: var(--frame-thickness);
-            left: var(--frame-thickness);
-            height: calc(100vh - var(--frame-thickness) * 2);
-            width: var(--sidebar-width);
-            background: rgba(244, 247, 254, 0.65);
-            backdrop-filter: blur(var(--blur-strength));
-            -webkit-backdrop-filter: blur(var(--blur-strength));
-            z-index: 9990;
-            transform: translateX(calc(-100% - 20px));
-            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            padding: 25px;
-            padding-top: 90px;
-            border-right: 2px solid var(--dark);
-            box-shadow: 7px 0 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .sidebar.open {
-            transform: translateX(0);
-        }
-        
-        /* Bento grid cards */
-        .bento-card {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            box-shadow: 5px 5px 0px var(--dark);
-            border: 2px solid var(--dark);
-            transition: all 0.3s ease;
-        }
-        
-        .bento-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 7px 7px 0px var(--dark);
-        }
-        
-        /* Modern logo */
-        .app-logo {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-        
-        .logo-container {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            margin-bottom: 15px;
-            perspective: 1000px;
-        }
-        
-        .logo-element {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 20px;
-            transform-style: preserve-3d;
-        }
-        
-        .logo-front {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            transform: translateZ(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 32px;
-            font-weight: bold;
-            box-shadow: 0 0 20px rgba(112, 0, 255, 0.5);
-        }
-        
-        .logo-middle {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            transform: translateZ(5px);
-            box-shadow: 0 0 15px rgba(112, 0, 255, 0.3);
-        }
-        
-        .logo-back {
-            background: var(--dark);
-            transform: translateZ(0);
-        }
-        
-        .logo-text {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            font-size: 32px;
-            background: linear-gradient(to right, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
-            text-transform: lowercase;
-        }
-        
-        .app-tagline {
-            font-size: 14px;
-            color: var(--dark);
-            opacity: 0.7;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        /* Status indicators */
-        .status-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            color: var(--dark);
-        }
-        
-        .status-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 10px;
-        }
-        
-        .status-text {
-            flex: 1;
-        }
-        
-        .status-value {
-            font-weight: 500;
-            padding: 3px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-            letter-spacing: 0.5px;
-        }
-        
-        .accuracy-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-good {
-            background-color: rgba(0, 208, 163, 0.15);
-            color: var(--success);
-        }
-        
-        .status-medium {
-            background-color: rgba(255, 184, 0, 0.15);
-            color: var(--warning);
-        }
-        
-        .status-bad {
-            background-color: rgba(255, 61, 111, 0.15);
-            color: var(--error);
-        }
-        
-        /* Modern buttons */
-        .btn {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            border: 2px solid var(--dark);
-            border-radius: var(--radius-sm);
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 5px 0;
-            box-shadow: 4px 4px 0px var(--dark);
-            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
-            transform: translateX(-100%);
-            transition: transform 0.5s ease;
-        }
-        
-        .btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 6px 6px 0px var(--dark);
-        }
-        
-        .btn:hover::before {
-            transform: translateX(100%);
-        }
-        
-        .btn:active {
-            transform: translateY(-1px);
-            box-shadow: 2px 2px 0px var(--dark);
-        }
-        
-        .btn-alt {
-            background: white;
-            color: var(--primary);
-            border: 2px solid var(--dark);
-        }
-        
-        /* Input styling */
-        .input-group {
-            margin-bottom: 15px;
-        }
-        
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--dark);
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.9);
-            box-shadow: 3px 3px 0px var(--dark);
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 5px 5px 0px var(--primary);
-        }
-        
-        #file-input {
-            display: none;
-        }
-        
-        /* Error message */
-        .error-message {
-            background: rgba(255, 61, 111, 0.15);
-            color: var(--error);
-            border: 2px solid var(--error);
-            border-radius: var(--radius-sm);
-            padding: 12px 16px;
-            font-size: 14px;
-            margin-top: 15px;
-            display: none;
-            box-shadow: 4px 4px 0px var(--dark);
-        }
-        
-        /* Copyright */
-        .copyright {
-            position: fixed;
-            bottom: calc(var(--frame-thickness) + 15px);
-            right: calc(var(--frame-thickness) + 15px);
-            font-size: 12px;
-            color: var(--dark);
-            opacity: 0.7;
-            text-align: right;
-            z-index: 10000;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 8px 12px;
-            border-radius: 40px;
-            border: 1px solid var(--dark);
-            box-shadow: 2px 2px 0px var(--dark);
-            transition: all 0.3s ease;
-        }
-        
-        .copyright:hover {
-            opacity: 1;
-            box-shadow: 3px 3px 0px var(--dark);
-            transform: translateY(-2px);
-        }
-        
-        .copyright a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        
-        .copyright a:hover {
-            color: var(--accent);
-        }
-        
-        /* 3D parallax floating elements */
-        .parallax-element {
-            position: fixed;
-            z-index: 9970;
-            pointer-events: none;
-            border-radius: 50%;
-            opacity: 0.5;
-            filter: blur(30px);
-        }
-        
-        .blob-1 {
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
-            right: 20%;
-            top: 20%;
-        }
-        
-        .blob-2 {
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, var(--secondary) 0%, transparent 70%);
-            left: 15%;
-            bottom: 25%;
-        }
-        
-        .blob-3 {
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
-            left: 30%;
-            top: 15%;
-        }
-        
-        /* Loading indicator */
-        .loading-indicator {
-            position: fixed;
-            bottom: calc(var(--frame-thickness) + 15px);
-            left: calc(var(--frame-thickness) + 15px);
-            z-index: 10000;
-            width: 60px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 40px;
-            border: 1px solid var(--dark);
-            box-shadow: 2px 2px 0px var(--dark);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .loading-indicator.active {
-            opacity: 1;
-        }
-        
-        .loading-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--primary);
-            animation: pulse 1.5s infinite;
-        }
-        
-        .loading-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        
-        .loading-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(0.5);
-                opacity: 0.5;
-            }
-            50% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            :root {
-                --frame-thickness: 16px;
-                --sidebar-width: 300px;
-            }
-            
-            .logo-text {
-                font-size: 28px;
-            }
-            
-            .btn {
-                padding: 10px 14px;
-            }
-        }
-    </style>
+  <meta charset="utf-8">
+  <title>MapLens</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2D9CDB;
+      --secondary: #56CCF2;
+      --accent: #6FCF97;
+      --background: #F7FAFC;
+      --dark: #222B45;
+      --grid: #E0E7EF;
+      --glass: rgba(255,255,255,0.75);
+      --radius: 22px;
+      --shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.08);
+      --sidebar-width: 340px;
+      --frame-thickness: 24px;
+      --tick-spacing: 40px;
+      --tick-length: 6px;
+    }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      color: var(--dark);
+      overflow: hidden;
+    }
+    /* Glass frame with grid */
+    .frame-container {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+      background:
+        linear-gradient(to right, var(--grid) 1px, transparent 1px) repeat-x,
+        linear-gradient(to bottom, var(--grid) 1px, transparent 1px) repeat-y;
+      background-size: var(--tick-spacing) var(--tick-spacing);
+      border: var(--frame-thickness) solid rgba(45,156,219,0.18);
+      box-sizing: border-box;
+      border-radius: var(--radius);
+    }
+    /* Tick marks */
+    .tick-marks { position: absolute; inset: 0; pointer-events: none; }
+    .tick-mark {
+      position: absolute; background: var(--primary); opacity: 0.5;
+      z-index: 9999;
+      border-radius: 2px;
+    }
+    .tick-mark.h { width: 2px; height: var(--tick-length);}
+    .tick-mark.v { height: 2px; width: var(--tick-length);}
+    /* Floating menu button */
+    #menu-toggle {
+      position: fixed;
+      top: calc(var(--frame-thickness) + 18px);
+      left: calc(var(--frame-thickness) + 18px);
+      z-index: 10000;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      font-size: 24px;
+      box-shadow: var(--shadow);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    #menu-toggle:hover { background: var(--secondary); }
+    /* Language selector */
+    .language-selector {
+      position: fixed;
+      top: calc(var(--frame-thickness) + 18px);
+      right: calc(var(--frame-thickness) + 18px);
+      z-index: 10000;
+      display: flex; gap: 8px;
+    }
+    .language-selector button {
+      background: var(--glass);
+      color: var(--dark);
+      border: 2px solid var(--primary);
+      border-radius: 14px;
+      font-weight: 600;
+      width: 48px; height: 38px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+      transition: background 0.2s, color 0.2s;
+    }
+    .language-selector button.active {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: white;
+      border: 2px solid var(--secondary);
+    }
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: var(--frame-thickness);
+      left: var(--frame-thickness);
+      height: calc(100vh - var(--frame-thickness)*2);
+      width: var(--sidebar-width);
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      z-index: 9999;
+      transform: translateX(-120%);
+      transition: transform 0.5s cubic-bezier(.77,0,.18,1);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding: 34px 28px 24px 28px;
+    }
+    .sidebar.open { transform: translateX(0); }
+    /* Logo */
+    .app-logo { text-align: center; margin-bottom: 16px;}
+    .logo-circle {
+      width: 54px; height: 54px; margin: 0 auto 12px auto;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 50%;
+      box-shadow: 0 4px 16px 0 var(--secondary), 0 2px 8px 0 var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2em; color: white; font-weight: 700;
+      letter-spacing: -1px;
+    }
+    .logo-text {
+      font-size: 1.6em;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: var(--primary);
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-transform: lowercase;
+    }
+    .app-tagline {
+      font-size: 1em;
+      color: var(--dark);
+      opacity: 0.7;
+      margin-bottom: 10px;
+      font-weight: 400;
+    }
+    /* Status panel */
+    .status-panel {
+      background: var(--glass);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+      padding: 16px 18px;
+      margin-bottom: 8px;
+    }
+    .status-list { list-style: none; padding: 0; margin: 0;}
+    .status-list li {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1em; margin-bottom: 5px;
+    }
+    .status-list li:last-child { margin-bottom: 0;}
+    .status-icon {
+      font-size: 1.1em;
+      color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      width: 1.5em; height: 1.5em;
+    }
+    .status-value { font-weight: 600;}
+    .accuracy-badge {
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.95em;
+      font-weight: 600;
+      margin-left: 4px;
+      background: var(--secondary);
+      color: white;
+    }
+    /* Form panel */
+    .form-panel {
+      background: var(--glass);
+      border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+      padding: 18px 18px 12px 18px;
+      margin-bottom: 8px;
+    }
+    .form-panel input[type="text"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--primary);
+      border-radius: 14px;
+      font-size: 1em;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.8);
+      color: var(--dark);
+      transition: border 0.2s;
+    }
+    .form-panel input[type="text"]:focus {
+      border-color: var(--secondary);
+      outline: none;
+    }
+    .btn {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 1em;
+      font-weight: 600;
+      padding: 12px 0;
+      margin: 6px 0;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+      transition: background 0.2s, box-shadow 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn:active { background: var(--secondary);}
+    .btn-alt {
+      background: white;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+      box-shadow: none;
+    }
+    .divider {
+      text-align: center;
+      color: var(--dark);
+      opacity: 0.5;
+      margin: 8px 0;
+      font-size: 0.97em;
+    }
+    .error-message {
+      background: rgba(255, 61, 111, 0.15);
+      color: #FF3D6F;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 1em;
+      margin-top: 12px;
+      display: none;
+    }
+    .copyright {
+      position: fixed;
+      bottom: calc(var(--frame-thickness) + 10px);
+      right: calc(var(--frame-thickness) + 10px);
+      font-size: 0.9em;
+      color: var(--dark);
+      opacity: 0.6;
+      background: var(--glass);
+      border-radius: 16px;
+      padding: 7px 14px;
+      z-index: 10000;
+      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+    }
+    .copyright a { color: var(--primary); text-decoration: none;}
+    .copyright a:hover { color: var(--accent);}
+    @media (max-width: 600px) {
+      :root { --sidebar-width: 95vw; }
+      .sidebar { padding: 18px 7vw 12px 7vw; }
+    }
+  </style>
 </head>
 <body>
-    <!-- Floating blobs (3D parallax effect) -->
-    <div class="parallax-element blob-1" data-depth="0.2"></div>
-    <div class="parallax-element blob-2" data-depth="0.5"></div>
-    <div class="parallax-element blob-3" data-depth="0.3"></div>
-    
-    <!-- Neo-brutalism frame -->
-    <div class="frame-container"></div>
-    
-    <!-- Corner marks -->
-    <div class="corner-mark corner-tl"></div>
-    <div class="corner-mark corner-tr"></div>
-    <div class="corner-mark corner-bl"></div>
-    <div class="corner-mark corner-br"></div>
-    
-    <!-- Menu FAB -->
-    <div class="fab menu-fab" id="menu-toggle">☰</div>
-    
-    <!-- Language selector -->
-    <div class="language-selector">
-        <button id="lang-el" class="active">EL</button>
-        <button id="lang-en">EN</button>
+  <div class="frame-container"></div>
+  <div class="tick-marks" id="tick-marks"></div>
+  <button id="menu-toggle">☰</button>
+  <div class="language-selector">
+    <button id="lang-el" class="active">EL</button>
+    <button id="lang-en">EN</button>
+  </div>
+  <div class="copyright">
+    © 2025 Thomas G. Lagkas | <a href="mailto:Thomas.lagkas@outlook.com">Thomas.lagkas@outlook.com</a>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div class="app-logo">
+      <div class="logo-circle">M</div>
+      <div class="logo-text">maplens</div>
+      <div class="app-tagline" data-el="Δες τον κόσμο αλλιώς" data-en="See the world differently">Δες τον κόσμο αλλιώς</div>
     </div>
-    
-    <!-- Copyright -->
-    <div class="copyright">
-        © 2025 Thomas G. Lagkas | <a href="mailto:Thomas.lagkas@outlook.com">Thomas.lagkas@outlook.com</a>
+    <div class="status-panel">
+      <ul class="status-list">
+        <li><span class="status-icon">📡</span><span id="status">⌛ Αναμονή GPS...</span></li>
+        <li><span class="status-icon">📏</span><span id="accuracy">Ακρίβεια GPS: Αναμονή...</span></li>
+        <li><span class="status-icon">🕑</span><span id="datetime"></span></li>
+      </ul>
     </div>
-    
-    <!-- Loading indicator -->
-    <div class="loading-indicator" id="loading-indicator">
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
+    <div class="form-panel">
+      <input type="file" id="file-input" accept=".kml">
+      <button id="upload-btn" class="btn" data-el="Φόρτωση KML" data-en="Load KML">Φόρτωση KML</button>
+      <div class="divider" data-el="ή" data-en="or">ή</div>
+      <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
+      <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
     </div>
-    
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="app-logo">
-            <div class="logo-container">
-                <div class="logo-element logo-back"></div>
-                <div class="logo-element logo-middle"></div>
-                <div class="logo-element logo-front">M</div>
-            </div>
-            <div class="logo-text">mapLens</div>
-            <div class="app-tagline" data-el="Δες τον κόσμο αλλιώς" data-en="See the world differently">Δες τον κόσμο αλλιώς</div>
-        </div>
-        
-        <div class="bento-card">
-            <div class="status-container">
-                <div class="status-item">
-                    <div class="status-icon">
-                        <i class="gps-icon">⊕</i>
-                    </div>
-                    <div class="status-text" id="status">⌛ Αναμονή GPS...</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-icon">
-                        <i class="accuracy-icon">◉</i>
-                    </div>
-                    <div class="status-text">
-                        <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
-                    </div>
-                </div>
-                <div class="status-item">
-                    <div class="status-icon">
-                        <i class="time-icon">◷</i>
-                    </div>
-                    <div class="status-text" id="datetime"></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="bento-card">
-            <input type="file" id="file-input" accept=".kml">
-            <button id="upload-btn" class="btn" data-el="Φόρτωση KML" data-en="Load KML">Φόρτωση KML</button>
-            <div style="text-align:center; margin:8px 0; font-size:14px; opacity:0.7;" data-el="ή" data-en="or">ή</div>
-            <div class="input-group">
-                <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
-            </div>
-            <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
-        </div>
-        
-        <div class="bento-card">
-            <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
-            <button id="reset-btn" class="btn btn-alt" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
-        </div>
-        
-        <div id="error-message" class="error-message"></div>
-    </div>
-
-    <!-- A-Frame Scene -->
-    <a-scene 
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
-        embedded>
-        <a-camera gps-camera rotation-reader></a-camera>
-        <a-entity id="kml-container"></a-entity>
-    </a-scene>
-
-    <script>
-        // Global variables
-        let arVisible = true;
-        let currentAccuracy = null;
-        let userPosition = null;
-        let currentLanguage = 'el';
-        
-        // DOM Elements
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebar = document.getElementById('sidebar');
-        const fileInput = document.getElementById('file-input');
-        const uploadBtn = document.getElementById('upload-btn');
-        const urlInput = document.getElementById('url-input');
-        const loadUrlBtn = document.getElementById('load-url-btn');
-        const toggleBtn = document.getElementById('toggle-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const statusEl = document.getElementById('status');
-        const accuracyEl = document.getElementById('accuracy');
-        const datetimeEl = document.getElementById('datetime');
-        const errorMessageEl = document.getElementById('error-message');
-        const kmlContainer = document.getElementById('kml-container');
-        const langEl = document.getElementById('lang-el');
-        const langEn = document.getElementById('lang-en');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        
-        // Parallax effect for blobs
-        document.addEventListener('mousemove', function(e) {
-            const parallaxElements = document.querySelectorAll('.parallax-element');
-            const mouseX = e.clientX / window.innerWidth - 0.5;
-            const mouseY = e.clientY / window.innerHeight - 0.5;
-            
-            parallaxElements.forEach(el => {
-                const depth = parseFloat(el.getAttribute('data-depth')) || 0.1;
-                const offsetX = mouseX * depth * 100;
-                const offsetY = mouseY * depth * 100;
-                gsap.to(el, {
-                    x: offsetX,
-                    y: offsetY,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            });
-        });
-        
-        // Logo animation
-        function animateLogo() {
-            gsap.to(".logo-front", {
-                rotateY: "+=20",
-                rotateX: "-=10",
-                duration: 3,
-                ease: "sine.inOut",
-                repeat: -1,
-                yoyo: true
-            });
-            
-            gsap.to(".logo-middle", {
-                rotateY: "+=15",
-                rotateX: "-=7",
-                duration: 3.5,
-                ease: "sine.inOut",
-                repeat: -1,
-                yoyo: true,
-                delay: 0.2
-            });
-        }
-        
-        // Translations
-        const translations = {
-            el: {
-                waiting: "⌛ Αναμονή GPS...",
-                active: "✅ GPS ενεργό",
-                loading: "⏳ Φόρτωση KML...",
-                loaded: "✅ KML φορτώθηκε!",
-                error: "❌ Σφάλμα!",
-                reset: "AR επαναφέρθηκε",
-                accuracy: "Ακρίβεια GPS: ",
-                notAvailable: "Ακρίβεια GPS: Μη διαθέσιμη",
-                urlRequired: "Παρακαλώ εισάγετε ένα URL!",
-                noPolygons: "Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!",
-                invalidXml: "Μη έγκυρο XML!",
-                readError: "Σφάλμα ανάγνωσης αρχείου!",
-                parseError: "Σφάλμα ανάλυσης KML: ",
-                downloadError: "Σφάλμα λήψης KML: ",
-                meters: "m",
-                hideAR: "Απόκρυψη AR",
-                showAR: "Εμφάνιση AR"
-            },
-            en: {
-                waiting: "⌛ Waiting for GPS...",
-                active: "✅ GPS active",
-                loading: "⏳ Loading KML...",
-                loaded: "✅ KML loaded!",
-                error: "❌ Error!",
-                reset: "AR reset",
-                accuracy: "GPS accuracy: ",
-                notAvailable: "GPS accuracy: Not available",
-                urlRequired: "Please enter a URL!",
-                noPolygons: "No polygons/lines/points found in the KML!",
-                invalidXml: "Invalid XML!",
-                readError: "Error reading file!",
-                parseError: "Error parsing KML: ",
-                downloadError: "Error downloading KML: ",
-                meters: "m",
-                hideAR: "Hide AR",
-                showAR: "Show AR"
-            }
-        };
-        
-        // Initialization
-        function init() {
-            // Start logo animation
-            animateLogo();
-            
-            // Update date/time
-            updateDateTime();
-            
-            // Setup event listeners
-            setupEventListeners();
-        }
-        
-        function setupEventListeners() {
-            // Menu toggle
-            menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('open');
-                if (sidebar.classList.contains('open')) {
-                    gsap.to(menuToggle, {rotate: 45, duration: 0.3, ease: "back.out"});
-                } else {
-                    gsap.to(menuToggle, {rotate: 0, duration: 0.3, ease: "back.out"});
-                }
-            });
-            
-            // File upload
-            uploadBtn.addEventListener('click', () => {
-                // Add click animation
-                gsap.to(uploadBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
-                fileInput.click();
-            });
-            
-            fileInput.addEventListener('change', handleFileUpload);
-            
-            // URL loading
-            loadUrlBtn.addEventListener('click', handleUrlLoad);
-            
-            // AR toggling
-            toggleBtn.addEventListener('click', toggleARVisibility);
-            
-            // AR reset
-            resetBtn.addEventListener('click', resetAR);
-            
-            // Language switching
-            langEl.addEventListener('click', () => setLanguage('el'));
-            langEn.addEventListener('click', () => setLanguage('en'));
-            
-            // Button hover animations
-            document.querySelectorAll('.btn').forEach(btn => {
-                btn.addEventListener('mouseenter', () => {
-                    gsap.to(btn, {y: -4, boxShadow: "6px 6px 0px #0A0118", duration: 0.2, ease: "power1.out"});
-                });
-                
-                btn.addEventListener('mouseleave', () => {
-                    gsap.to(btn, {y: 0, boxShadow: "4px 4px 0px #0A0118", duration: 0.2, ease: "power1.in"});
-                });
-            });
-        }
-        
-        // Date & time
-        function updateDateTime() {
-            const now = new Date();
-            datetimeEl.textContent = now.toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
-            setTimeout(updateDateTime, 1000);
-        }
-        
-        // Set language
-        function setLanguage(lang) {
-            currentLanguage = lang;
-            
-            // Update active button
-            langEl.classList.toggle('active', lang === 'el');
-            langEn.classList.toggle('active', lang === 'en');
-            
-            // Animate language change
-            gsap.to('.language-selector button', {
-                scale: 0.9, 
-                duration: 0.1,
-                stagger: 0.05,
-                onComplete: () => {
-                    gsap.to('.language-selector button', {
-                        scale: 1, 
-                        duration: 0.2,
-                        stagger: 0.05
-                    });
-                }
-            });
-            
-            // Update all elements with data-el and data-en attributes
-            document.querySelectorAll('[data-el][data-en]').forEach(el => {
-                el.textContent = el.getAttribute(`data-${lang}`);
-            });
-            
-            // Update placeholders
-            document.querySelectorAll('[data-el-placeholder][data-en-placeholder]').forEach(el => {
-                el.setAttribute('placeholder', el.getAttribute(`data-${lang}-placeholder`));
-            });
-            
-            // Update status text
-            if (statusEl.textContent.includes('GPS')) {
-                statusEl.textContent = userPosition ? translations[lang].active : translations[lang].waiting;
-            }
-            
-            // Update accuracy 
-            if (currentAccuracy !== null) {
-                accuracyEl.textContent = `${translations[lang].accuracy}±${currentAccuracy.toFixed(2)}${translations[lang].meters}`;
-            } else {
-                accuracyEl.textContent = translations[lang].notAvailable;
-            }
-            
-            // Update toggle button text
-            toggleBtn.textContent = arVisible ? translations[lang].hideAR : translations[lang].showAR;
-        }
-        
-        // Show loading
-        function showLoading(show) {
-            loadingIndicator.classList.toggle('active', show);
-        }
-        
-        // Handle KML file upload
-        function handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            showLoading(true);
-            statusEl.textContent = translations[currentLanguage].loading;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const polygons = parseKML(e.target.result);
-                    if (!polygons || polygons.length === 0) {
-                        showError(translations[currentLanguage].noPolygons);
-                    } else {
-                        renderPolygons(polygons);
-                        statusEl.textContent = translations[currentLanguage].loaded;
-                        
-                        // Success animation
-                        gsap.fromTo('.bento-card', 
-                            {scale: 0.98, opacity: 0.9}, 
-                            {scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "elastic.out(1, 0.5)"}
-                        );
-                    }
-                } catch (err) {
-                    showError(translations[currentLanguage].parseError + err.message);
-                } finally {
-                    showLoading(false);
-                }
-            };
-            reader.onerror = function() {
-                showError(translations[currentLanguage].readError);
-                showLoading(false);
-            };
-            reader.readAsText(file);
-        }
-        
-        // Handle KML URL loading
-        function handleUrlLoad() {
-            const url = urlInput.value.trim();
-            if (!url) {
-                showError(translations[currentLanguage].urlRequired);
-                return;
-            }
-            
-            showLoading(true);
-            statusEl.textContent = translations[currentLanguage].loading;
-            
-            // Button animation
-            gsap.to(loadUrlBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
-            
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                    return response.text();
-                })
-                .then(kmlText => {
-                    try {
-                        const polygons = parseKML(kmlText);
-                        if (!polygons || polygons.length === 0) {
-                            showError(translations[currentLanguage].noPolygons);
-                        } else {
-                            renderPolygons(polygons);
-                            statusEl.textContent = translations[currentLanguage].loaded;
-                            
-                            // Success animation
-                            gsap.fromTo('.bento-card', 
-                                {scale: 0.98, opacity: 0.9}, 
-                                {scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "elastic.out(1, 0.5)"}
-                            );
-                        }
-                    } catch (err) {
-                        showError(translations[currentLanguage].parseError + err.message);
-                    } finally {
-                        showLoading(false);
-                    }
-                })
-                .catch(error => {
-                    showError(translations[currentLanguage].downloadError + error.message);
-                    showLoading(false);
-                });
-        }
-        
-        // Parse KML to extract polygons, lines, points
-        function parseKML(kmlText) {
-            const parser = new DOMParser();
-            const kmlDoc = parser.parseFromString(kmlText, "text/xml");
-            const parserError = kmlDoc.getElementsByTagName('parsererror');
-            if (parserError.length > 0) throw new Error(translations[currentLanguage].invalidXml);
-            const polygons = [];
-            const placemarks = kmlDoc.getElementsByTagName('Placemark');
-            for (let i = 0; i < placemarks.length; i++) {
-                const placemark = placemarks[i];
-                const nameEl = placemark.getElementsByTagName('name')[0];
-                const name = nameEl ? nameEl.textContent : "Στοιχείο " + (i + 1);
-                // Πολύγωνα
-                const polygonElements = placemark.getElementsByTagName('Polygon');
-                for (let j = 0; j < polygonElements.length; j++) {
-                    const polygon = polygonElements[j];
-                    const coordsElements = polygon.getElementsByTagName('coordinates');
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        if (coords.length > 2) {
-                            polygons.push({type: 'polygon', name, points: coords});
-                        }
-                    }
-                }
-                // Γραμμές
-                const lineElements = placemark.getElementsByTagName('LineString');
-                for (let j = 0; j < lineElements.length; j++) {
-                    const line = lineElements[j];
-                    const coordsElements = line.getElementsByTagName('coordinates');
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        if (coords.length > 1) {
-                            polygons.push({type: 'line', name, points: coords});
-                        }
-                    }
-                }
-                // Σημεία
-                const pointElements = placemark.getElementsByTagName('Point');
-                for (let j = 0; j < pointElements.length; j++) {
-                    const point = pointElements[j];
-                    const coordsElements = point.getElementsByTagName('coordinates');
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        if (coords.length > 0) {
-                            polygons.push({type: 'point', name, points: coords});
-                        }
-                    }
-                }
-            }
-            return polygons;
-        }
-        
-        function parseCoordinateString(coordsText) {
-            const coordinates = [];
-            const coordPairs = coordsText.split(/\s+/);
-            for (let i = 0; i < coordPairs.length; i++) {
-                const pair = coordPairs[i].trim();
-                if (!pair) continue;
-                const coords = pair.split(',');
-                if (coords.length >= 2) {
-                    const lon = parseFloat(coords[0]);
-                    const lat = parseFloat(coords[1]);
-                    if (!isNaN(lon) && !isNaN(lat)) {
-                        coordinates.push({ lat, lon });
-                    }
-                }
-            }
-            return coordinates;
-        }
-        
-        // Render polygons, lines, points
-        function renderPolygons(polygons) {
-            kmlContainer.innerHTML = '';
-            polygons.forEach((polygon, index) => {
-                if (polygon.type === 'polygon') {
-                    renderPolygon(polygon, index);
-                } else if (polygon.type === 'line') {
-                    renderLine(polygon, index);
-                } else if (polygon.type === 'point') {
-                    renderPoint(polygon, index);
-                }
-            });
-        }
-        
-        function renderPolygon(polygon, index) {
-            const points = polygon.points;
-            for (let i = 0; i < points.length; i++) {
-                const p1 = points[i];
-                const p2 = points[(i + 1) % points.length];
-                const line = document.createElement('a-entity');
-                line.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
-                line.setAttribute('line', {
-                    start: '0 0 0',
-                    end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#7000FF', // Primary color
-                    opacity: 0.85,
-                    width: 6
-                });
-                kmlContainer.appendChild(line);
-            }
-            // Calculate center point
-            let avgLat = 0, avgLon = 0;
-            points.forEach(p => { avgLat += p.lat; avgLon += p.lon; });
-            avgLat /= points.length;
-            avgLon /= points.length;
-            // Calculate maximum distance
-            let maxDistance = 0;
-            points.forEach(p => {
-                const distance = geoDistance(avgLat, avgLon, p.lat, p.lon);
-                if (distance > maxDistance) maxDistance = distance;
-            });
-            // Create polygon fill
-            const fill = document.createElement('a-entity');
-            fill.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
-            fill.setAttribute('geometry', {
-                primitive: 'plane',
-                width: maxDistance * 2,
-                height: maxDistance * 2
-            });
-            fill.setAttribute('material', {
-                color: '#00E0FF', // Secondary color
-                opacity: 0.25,
-                transparent: true,
-                side: 'double'
-            });
-            fill.setAttribute('rotation', '-90 0 0');
-            kmlContainer.appendChild(fill);
-            // Add text label
-            const text = document.createElement('a-text');
-            text.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
-            text.setAttribute('value', polygon.name);
-            text.setAttribute('scale', '7 7 7');
-            text.setAttribute('look-at', '[gps-camera]');
-            text.setAttribute('align', 'center');
-            text.setAttribute('color', '#7000FF'); // Primary color
-            text.setAttribute('position', '0 12 0');
-            kmlContainer.appendChild(text);
-        }
-        
-        function renderLine(line, index) {
-            const points = line.points;
-            for (let i = 0; i < points.length - 1; i++) {
-                const p1 = points[i];
-                const p2 = points[i + 1];
-                const lineEntity = document.createElement('a-entity');
-                lineEntity.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
-                lineEntity.setAttribute('line', {
-                    start: '0 0 0',
-                    end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: '#FF3DFC', // Accent color
-                    opacity: 0.9,
-                    width: 4
-                });
-                kmlContainer.appendChild(lineEntity);
-            }
-            // Add label at midpoint
-            if (points.length > 0) {
-                const midPoint = points[Math.floor(points.length / 2)];
-                const text = document.createElement('a-text');
-                text.setAttribute('gps-entity-place', `latitude: ${midPoint.lat}; longitude: ${midPoint.lon}`);
-                text.setAttribute('value', line.name);
-                text.setAttribute('scale', '6 6 6');
-                text.setAttribute('look-at', '[gps-camera]');
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', '#7000FF'); // Primary color
-                text.setAttribute('position', '0 10 0');
-                kmlContainer.appendChild(text);
-            }
-        }
-        
-        function renderPoint(point, index) {
-            if (point.points.length > 0) {
-                const p = point.points[0];
-                const sphere = document.createElement('a-sphere');
-                sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', '#FF3DFC'); // Accent color
-                sphere.setAttribute('radius', '2.5');
-                sphere.setAttribute('position', '0 0 0');
-                kmlContainer.appendChild(sphere);
-                const text = document.createElement('a-text');
-                text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                text.setAttribute('value', point.name);
-                text.setAttribute('scale', '5 5 5');
-                text.setAttribute('look-at', '[gps-camera]');
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', '#7000FF'); // Primary color
-                text.setAttribute('position', '0 8 0');
-                kmlContainer.appendChild(text);
-            }
-        }
-        
-        // Toggle AR visibility
-        function toggleARVisibility() {
-            arVisible = !arVisible;
-            kmlContainer.setAttribute('visible', arVisible);
-            toggleBtn.textContent = arVisible ? 
-                translations[currentLanguage].hideAR : 
-                translations[currentLanguage].showAR;
-                
-            // Button animation
-            gsap.to(toggleBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
-        }
-        
-        // Reset AR scene
-        function resetAR() {
-            kmlContainer.innerHTML = '';
-            statusEl.textContent = translations[currentLanguage].reset;
-            
-            // Button animation
-            gsap.to(resetBtn, {scale: 0.95, duration: 0.1, yoyo: true, repeat: 1});
-        }
-        
-        // Show error message
-        function showError(message) {
-            errorMessageEl.textContent = message;
-            errorMessageEl.style.display = 'block';
-            
-            // Animation
-            gsap.fromTo(errorMessageEl, 
-                {y: -10, opacity: 0}, 
-                {y: 0, opacity: 1, duration: 0.3, ease: "back.out"}
-            );
-            
-            setTimeout(() => {
-                gsap.to(errorMessageEl, {
-                    opacity: 0, 
-                    y: 10, 
-                    duration: 0.3, 
-                    onComplete: () => { errorMessageEl.style.display = 'none'; }
-                });
-            }, 5000);
-            
-            statusEl.textContent = translations[currentLanguage].error;
-        }
-        
-        // Convert geo coordinates to meters
-        function geoToMeters(lat1, lon1, lat2, lon2) {
-            const R = 6378137;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distance = R * c;
-            const bearing = Math.atan2(
-                Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
-                Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-                Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
-            );
-            const x = distance * Math.sin(bearing);
-            const z = distance * Math.cos(bearing);
-            return { x, y: 0, z };
-        }
-        
-        function geoDistance(lat1, lon1, lat2, lon2) {
-            const R = 6378137;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-        
-        // AR scene initialization and location handling
-        document.addEventListener('DOMContentLoaded', () => {
-            init();
-            
-            const camera = document.querySelector('a-camera');
-            camera.addEventListener('gps-camera-update-position', e => {
-                userPosition = e.detail.position;
-                statusEl.textContent = translations[currentLanguage].active;
-                let acc = null;
-                if (e.detail.position && e.detail.position.accuracy !== undefined) {
-                    acc = e.detail.position.accuracy;
-                } else if (e.detail.accuracy !== undefined) {
-                    acc = e.detail.accuracy;
-                }
-                if (acc !== null) {
-                    currentAccuracy = acc;
-                    accuracyEl.textContent = `${translations[currentLanguage].accuracy}±${currentAccuracy.toFixed(2)}${translations[currentLanguage].meters}`;
-                    
-                    // Update accuracy class
-                    accuracyEl.className = 'accuracy-badge';
-                    if (currentAccuracy <= 10) {
-                        accuracyEl.classList.add('status-good');
-                    } else if (currentAccuracy <= 20) {
-                        accuracyEl.classList.add('status-medium');
-                    } else {
-                        accuracyEl.classList.add('status-bad');
-                    }
-                } else {
-                    accuracyEl.textContent = translations[currentLanguage].notAvailable;
-                    accuracyEl.className = 'accuracy-badge';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+    <div class="form-panel">
+      <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυ
