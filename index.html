@@ -15,7 +15,7 @@
       --background: #F7FAFC;
       --dark: #222B45;
       --grid: #E0E7EF;
-      --glass: rgba(255,255,255,0.75);
+      --glass: rgba(255,255,255,0.78);
       --radius: 22px;
       --shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.08);
       --sidebar-width: 340px;
@@ -47,7 +47,7 @@
     /* Tick marks */
     .tick-marks { position: absolute; inset: 0; pointer-events: none; }
     .tick-mark {
-      position: absolute; background: var(--primary); opacity: 0.5;
+      position: absolute; background: var(--primary); opacity: 0.4;
       z-index: 9999;
       border-radius: 2px;
     }
@@ -119,7 +119,7 @@
     .app-logo { text-align: center; margin-bottom: 16px;}
     .logo-circle {
       width: 54px; height: 54px; margin: 0 auto 12px auto;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: var(--primary);
       border-radius: 50%;
       box-shadow: 0 4px 16px 0 var(--secondary), 0 2px 8px 0 var(--accent);
       display: flex; align-items: center; justify-content: center;
@@ -288,4 +288,448 @@
       <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
     </div>
     <div class="form-panel">
-      <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυ
+      <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
+      <button id="reset-btn" class="btn btn-alt" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
+    </div>
+    <div id="error-message" class="error-message"></div>
+  </div>
+  <a-scene 
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    embedded>
+    <a-camera gps-camera rotation-reader></a-camera>
+    <a-entity id="kml-container"></a-entity>
+  </a-scene>
+  <script>
+    // Tick marks
+    function createTickMarks() {
+      const tickMarks = document.getElementById('tick-marks');
+      tickMarks.innerHTML = '';
+      const w = window.innerWidth, h = window.innerHeight;
+      const frame = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--frame-thickness'));
+      const spacing = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-spacing'));
+      const len = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-length'));
+      // Top/bottom
+      for (let x = frame; x < w - frame; x += spacing) {
+        let t = document.createElement('div');
+        t.className = 'tick-mark h'; t.style.top = frame + 'px'; t.style.left = x + 'px';
+        tickMarks.appendChild(t);
+        let b = document.createElement('div');
+        b.className = 'tick-mark h'; b.style.bottom = frame + 'px'; b.style.left = x + 'px';
+        tickMarks.appendChild(b);
+      }
+      // Left/right
+      for (let y = frame; y < h - frame; y += spacing) {
+        let l = document.createElement('div');
+        l.className = 'tick-mark v'; l.style.left = frame + 'px'; l.style.top = y + 'px';
+        tickMarks.appendChild(l);
+        let r = document.createElement('div');
+        r.className = 'tick-mark v'; r.style.right = frame + 'px'; r.style.top = y + 'px';
+        tickMarks.appendChild(r);
+      }
+    }
+    window.addEventListener('resize', createTickMarks);
+    window.addEventListener('DOMContentLoaded', createTickMarks);
+
+    // Sidebar menu
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+
+    // Language switching
+    let currentLanguage = 'el';
+    const langEl = document.getElementById('lang-el');
+    const langEn = document.getElementById('lang-en');
+    langEl.addEventListener('click', () => setLanguage('el'));
+    langEn.addEventListener('click', () => setLanguage('en'));
+    function setLanguage(lang) {
+      currentLanguage = lang;
+      langEl.classList.toggle('active', lang === 'el');
+      langEn.classList.toggle('active', lang === 'en');
+      document.querySelectorAll('[data-el][data-en]').forEach(el => {
+        el.textContent = el.getAttribute(`data-${lang}`);
+      });
+      document.querySelectorAll('[data-el-placeholder][data-en-placeholder]').forEach(el => {
+        el.setAttribute('placeholder', el.getAttribute(`data-${lang}-placeholder`));
+      });
+    }
+
+    // Date/time
+    function updateDateTime() {
+      document.getElementById('datetime').textContent =
+        new Date().toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
+      setTimeout(updateDateTime, 1000);
+    }
+    updateDateTime();
+
+    // Translations
+    const translations = {
+      el: {
+        waiting: "⌛ Αναμονή GPS...",
+        active: "✅ GPS ενεργό",
+        loading: "⏳ Φόρτωση KML...",
+        loaded: "✅ KML φορτώθηκε!",
+        error: "❌ Σφάλμα!",
+        reset: "AR επαναφέρθηκε",
+        accuracy: "Ακρίβεια GPS: ",
+        notAvailable: "Ακρίβεια GPS: Μη διαθέσιμη",
+        urlRequired: "Παρακαλώ εισάγετε ένα URL!",
+        noPolygons: "Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!",
+        invalidXml: "Μη έγκυρο XML!",
+        readError: "Σφάλμα ανάγνωσης αρχείου!",
+        parseError: "Σφάλμα ανάλυσης KML: ",
+        downloadError: "Σφάλμα λήψης KML: ",
+        meters: "m",
+        hideAR: "Απόκρυψη AR",
+        showAR: "Εμφάνιση AR"
+      },
+      en: {
+        waiting: "⌛ Waiting for GPS...",
+        active: "✅ GPS active",
+        loading: "⏳ Loading KML...",
+        loaded: "✅ KML loaded!",
+        error: "❌ Error!",
+        reset: "AR reset",
+        accuracy: "GPS accuracy: ",
+        notAvailable: "GPS accuracy: Not available",
+        urlRequired: "Please enter a URL!",
+        noPolygons: "No polygons/lines/points found in the KML!",
+        invalidXml: "Invalid XML!",
+        readError: "Error reading file!",
+        parseError: "Error parsing KML: ",
+        downloadError: "Error downloading KML: ",
+        meters: "m",
+        hideAR: "Hide AR",
+        showAR: "Show AR"
+      }
+    };
+
+    // Status update
+    let arVisible = true, currentAccuracy = null, userPosition = null;
+    const statusEl = document.getElementById('status');
+    const accuracyEl = document.getElementById('accuracy');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const errorMessageEl = document.getElementById('error-message');
+    const kmlContainer = document.getElementById('kml-container');
+    toggleBtn.addEventListener('click', () => {
+      arVisible = !arVisible;
+      kmlContainer.setAttribute('visible', arVisible);
+      toggleBtn.textContent = arVisible ? translations[currentLanguage].hideAR : translations[currentLanguage].showAR;
+    });
+    resetBtn.addEventListener('click', () => {
+      kmlContainer.innerHTML = '';
+      statusEl.textContent = translations[currentLanguage].reset;
+    });
+
+    // GPS status
+    document.addEventListener('DOMContentLoaded', () => {
+      const camera = document.querySelector('a-camera');
+      camera.addEventListener('gps-camera-update-position', e => {
+        userPosition = e.detail.position;
+        statusEl.textContent = translations[currentLanguage].active;
+        let acc = null;
+        if (e.detail.position && e.detail.position.accuracy !== undefined) {
+          acc = e.detail.position.accuracy;
+        } else if (e.detail.accuracy !== undefined) {
+          acc = e.detail.accuracy;
+        }
+        if (acc !== null) {
+          currentAccuracy = acc;
+          accuracyEl.textContent = `${translations[currentLanguage].accuracy}±${currentAccuracy.toFixed(2)}${translations[currentLanguage].meters}`;
+          accuracyEl.className = 'accuracy-badge';
+          if (currentAccuracy <= 10) accuracyEl.style.background = "#6FCF97";
+          else if (currentAccuracy <= 20) accuracyEl.style.background = "#56CCF2";
+          else accuracyEl.style.background = "#F2994A";
+        } else {
+          accuracyEl.textContent = translations[currentLanguage].notAvailable;
+          accuracyEl.className = '';
+        }
+      });
+    });
+
+    // KML loading
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const urlInput = document.getElementById('url-input');
+    const loadUrlBtn = document.getElementById('load-url-btn');
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileUpload);
+    loadUrlBtn.addEventListener('click', handleUrlLoad);
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      statusEl.textContent = translations[currentLanguage].loading;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const polygons = parseKML(e.target.result);
+          if (!polygons || polygons.length === 0) {
+            showError(translations[currentLanguage].noPolygons);
+          } else {
+            renderPolygons(polygons);
+            statusEl.textContent = translations[currentLanguage].loaded;
+          }
+        } catch (err) {
+          showError(translations[currentLanguage].parseError + err.message);
+        }
+      };
+      reader.onerror = function() {
+        showError(translations[currentLanguage].readError);
+      };
+      reader.readAsText(file);
+    }
+
+    function handleUrlLoad() {
+      const url = urlInput.value.trim();
+      if (!url) {
+        showError(translations[currentLanguage].urlRequired);
+        return;
+      }
+      statusEl.textContent = translations[currentLanguage].loading;
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          return response.text();
+        })
+        .then(kmlText => {
+          try {
+            const polygons = parseKML(kmlText);
+            if (!polygons || polygons.length === 0) {
+              showError(translations[currentLanguage].noPolygons);
+            } else {
+              renderPolygons(polygons);
+              statusEl.textContent = translations[currentLanguage].loaded;
+            }
+          } catch (err) {
+            showError(translations[currentLanguage].parseError + err.message);
+          }
+        })
+        .catch(error => {
+          showError(translations[currentLanguage].downloadError + error.message);
+        });
+    }
+
+    function showError(message) {
+      errorMessageEl.textContent = message;
+      errorMessageEl.style.display = 'block';
+      setTimeout(() => { errorMessageEl.style.display = 'none'; }, 5000);
+      statusEl.textContent = translations[currentLanguage].error;
+    }
+
+    function parseKML(kmlText) {
+      const parser = new DOMParser();
+      const kmlDoc = parser.parseFromString(kmlText, "text/xml");
+      const parserError = kmlDoc.getElementsByTagName('parsererror');
+      if (parserError.length > 0) throw new Error(translations[currentLanguage].invalidXml);
+      const polygons = [];
+      const placemarks = kmlDoc.getElementsByTagName('Placemark');
+      for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        const nameEl = placemark.getElementsByTagName('name')[0];
+        const name = nameEl ? nameEl.textContent : "Στοιχείο " + (i + 1);
+        // Πολύγωνα
+        const polygonElements = placemark.getElementsByTagName('Polygon');
+        for (let j = 0; j < polygonElements.length; j++) {
+          const polygon = polygonElements[j];
+          const coordsElements = polygon.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 2) {
+              polygons.push({type: 'polygon', name, points: coords});
+            }
+          }
+        }
+        // Γραμμές
+        const lineElements = placemark.getElementsByTagName('LineString');
+        for (let j = 0; j < lineElements.length; j++) {
+          const line = lineElements[j];
+          const coordsElements = line.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 1) {
+              polygons.push({type: 'line', name, points: coords});
+            }
+          }
+        }
+        // Σημεία
+        const pointElements = placemark.getElementsByTagName('Point');
+        for (let j = 0; j < pointElements.length; j++) {
+          const point = pointElements[j];
+          const coordsElements = point.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 0) {
+              polygons.push({type: 'point', name, points: coords});
+            }
+          }
+        }
+      }
+      return polygons;
+    }
+    function parseCoordinateString(coordsText) {
+      const coordinates = [];
+      const coordPairs = coordsText.split(/\s+/);
+      for (let i = 0; i < coordPairs.length; i++) {
+        const pair = coordPairs[i].trim();
+        if (!pair) continue;
+        const coords = pair.split(',');
+        if (coords.length >= 2) {
+          const lon = parseFloat(coords[0]);
+          const lat = parseFloat(coords[1]);
+          if (!isNaN(lon) && !isNaN(lat)) {
+            coordinates.push({ lat, lon });
+          }
+        }
+      }
+      return coordinates;
+    }
+    function renderPolygons(polygons) {
+      kmlContainer.innerHTML = '';
+      polygons.forEach((polygon, index) => {
+        if (polygon.type === 'polygon') {
+          renderPolygon(polygon, index);
+        } else if (polygon.type === 'line') {
+          renderLine(polygon, index);
+        } else if (polygon.type === 'point') {
+          renderPoint(polygon, index);
+        }
+      });
+    }
+    function renderPolygon(polygon, index) {
+      const points = polygon.points;
+      for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        const line = document.createElement('a-entity');
+        line.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
+        line.setAttribute('line', {
+          start: '0 0 0',
+          end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
+          color: '#2D9CDB',
+          opacity: 0.85,
+          width: 6
+        });
+        kmlContainer.appendChild(line);
+      }
+      let avgLat = 0, avgLon = 0;
+      points.forEach(p => { avgLat += p.lat; avgLon += p.lon; });
+      avgLat /= points.length;
+      avgLon /= points.length;
+      let maxDistance = 0;
+      points.forEach(p => {
+        const distance = geoDistance(avgLat, avgLon, p.lat, p.lon);
+        if (distance > maxDistance) maxDistance = distance;
+      });
+      const fill = document.createElement('a-entity');
+      fill.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
+      fill.setAttribute('geometry', {
+        primitive: 'plane',
+        width: maxDistance * 2,
+        height: maxDistance * 2
+      });
+      fill.setAttribute('material', {
+        color: '#56CCF2',
+        opacity: 0.25,
+        transparent: true,
+        side: 'double'
+      });
+      fill.setAttribute('rotation', '-90 0 0');
+      kmlContainer.appendChild(fill);
+      const text = document.createElement('a-text');
+      text.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
+      text.setAttribute('value', polygon.name);
+      text.setAttribute('scale', '7 7 7');
+      text.setAttribute('look-at', '[gps-camera]');
+      text.setAttribute('align', 'center');
+      text.setAttribute('color', '#2D9CDB');
+      text.setAttribute('position', '0 12 0');
+      kmlContainer.appendChild(text);
+    }
+    function renderLine(line, index) {
+      const points = line.points;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const lineEntity = document.createElement('a-entity');
+        lineEntity.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
+        lineEntity.setAttribute('line', {
+          start: '0 0 0',
+          end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
+          color: '#6FCF97',
+          opacity: 0.9,
+          width: 4
+        });
+        kmlContainer.appendChild(lineEntity);
+      }
+      if (points.length > 0) {
+        const midPoint = points[Math.floor(points.length / 2)];
+        const text = document.createElement('a-text');
+        text.setAttribute('gps-entity-place', `latitude: ${midPoint.lat}; longitude: ${midPoint.lon}`);
+        text.setAttribute('value', line.name);
+        text.setAttribute('scale', '6 6 6');
+        text.setAttribute('look-at', '[gps-camera]');
+        text.setAttribute('align', 'center');
+        text.setAttribute('color', '#2D9CDB');
+        text.setAttribute('position', '0 10 0');
+        kmlContainer.appendChild(text);
+      }
+    }
+    function renderPoint(point, index) {
+      if (point.points.length > 0) {
+        const p = point.points[0];
+        const sphere = document.createElement('a-sphere');
+        sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        sphere.setAttribute('color', '#6FCF97');
+        sphere.setAttribute('radius', '2.5');
+        sphere.setAttribute('position', '0 0 0');
+        kmlContainer.appendChild(sphere);
+        const text = document.createElement('a-text');
+        text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        text.setAttribute('value', point.name);
+        text.setAttribute('scale', '5 5 5');
+        text.setAttribute('look-at', '[gps-camera]');
+        text.setAttribute('align', 'center');
+        text.setAttribute('color', '#2D9CDB');
+        text.setAttribute('position', '0 8 0');
+        kmlContainer.appendChild(text);
+      }
+    }
+    function geoToMeters(lat1, lon1, lat2, lon2) {
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      const bearing = Math.atan2(
+        Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
+        Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+        Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
+      );
+      const x = distance * Math.sin(bearing);
+      const z = distance * Math.cos(bearing);
+      return { x, y: 0, z };
+    }
+    function geoDistance(lat1, lon1, lat2, lon2) {
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+  </script>
+</body>
+</html>
