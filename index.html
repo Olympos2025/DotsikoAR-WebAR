@@ -9,19 +9,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #2D9CDB;
-      --secondary: #56CCF2;
-      --accent: #6FCF97;
-      --background: #F7FAFC;
-      --dark: #222B45;
-      --grid: #E0E7EF;
-      --glass: rgba(255,255,255,0.78);
-      --radius: 22px;
-      --shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.08);
+      --primary: #2d9cdb;
+      --secondary: #56ccf2;
+      --accent: #6fcf97;
+      --background: #f7fafc;
+      --dark: #222b45;
+      --grid: #b7e0f7;
+      --glass: rgba(255,255,255,0.89);
+      --radius: 20px;
+      --shadow: 0 6px 24px 0 rgba(44,62,80,0.14);
       --sidebar-width: 340px;
-      --frame-thickness: 24px;
-      --tick-spacing: 40px;
-      --tick-length: 6px;
+      --frame-thickness: 22px;
+      --tick-spacing: 36px;
+      --tick-length: 10px;
     }
     body {
       margin: 0;
@@ -30,7 +30,7 @@
       color: var(--dark);
       overflow: hidden;
     }
-    /* Glass frame with grid */
+    /* Grid frame */
     .frame-container {
       position: fixed;
       inset: 0;
@@ -40,14 +40,15 @@
         linear-gradient(to right, var(--grid) 1px, transparent 1px) repeat-x,
         linear-gradient(to bottom, var(--grid) 1px, transparent 1px) repeat-y;
       background-size: var(--tick-spacing) var(--tick-spacing);
-      border: var(--frame-thickness) solid rgba(45,156,219,0.18);
+      border: var(--frame-thickness) solid rgba(45,156,219,0.13);
       box-sizing: border-box;
       border-radius: var(--radius);
+      filter: blur(0.5px);
     }
     /* Tick marks */
     .tick-marks { position: absolute; inset: 0; pointer-events: none; }
     .tick-mark {
-      position: absolute; background: var(--primary); opacity: 0.4;
+      position: absolute; background: var(--primary); opacity: 0.22;
       z-index: 9999;
       border-radius: 2px;
     }
@@ -56,16 +57,16 @@
     /* Floating menu button */
     #menu-toggle {
       position: fixed;
-      top: calc(var(--frame-thickness) + 18px);
-      left: calc(var(--frame-thickness) + 18px);
+      top: calc(var(--frame-thickness) + 12px);
+      left: calc(var(--frame-thickness) + 12px);
       z-index: 10000;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      background: var(--primary);
       color: white;
       border: none;
-      width: 48px; height: 48px;
-      border-radius: 50%;
-      font-size: 24px;
-      box-shadow: var(--shadow);
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      font-size: 22px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.10);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       transition: background 0.2s, box-shadow 0.2s;
@@ -74,26 +75,26 @@
     /* Language selector */
     .language-selector {
       position: fixed;
-      top: calc(var(--frame-thickness) + 18px);
-      right: calc(var(--frame-thickness) + 18px);
+      top: calc(var(--frame-thickness) + 12px);
+      right: calc(var(--frame-thickness) + 12px);
       z-index: 10000;
-      display: flex; gap: 8px;
+      display: flex; gap: 6px;
     }
     .language-selector button {
       background: var(--glass);
-      color: var(--dark);
-      border: 2px solid var(--primary);
-      border-radius: 14px;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+      border-radius: 12px;
       font-weight: 600;
-      width: 48px; height: 38px;
+      width: 38px; height: 34px;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+      font-size: 1em;
       transition: background 0.2s, color 0.2s;
     }
     .language-selector button.active {
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      background: var(--primary);
       color: white;
-      border: 2px solid var(--secondary);
+      border: 1.5px solid var(--secondary);
     }
     /* Sidebar */
     .sidebar {
@@ -103,7 +104,7 @@
       height: calc(100vh - var(--frame-thickness)*2);
       width: var(--sidebar-width);
       background: var(--glass);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(18px);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       z-index: 9999;
@@ -111,51 +112,55 @@
       transition: transform 0.5s cubic-bezier(.77,0,.18,1);
       display: flex;
       flex-direction: column;
-      gap: 22px;
-      padding: 34px 28px 24px 28px;
+      gap: 18px;
+      padding: 24px 18px 18px 18px;
     }
     .sidebar.open { transform: translateX(0); }
     /* Logo */
-    .app-logo { text-align: center; margin-bottom: 16px;}
+    .app-logo { text-align: center; margin-bottom: 10px;}
+    .logo-row {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
     .logo-circle {
-      width: 54px; height: 54px; margin: 0 auto 12px auto;
+      width: 36px; height: 36px;
       background: var(--primary);
       border-radius: 50%;
-      box-shadow: 0 4px 16px 0 var(--secondary), 0 2px 8px 0 var(--accent);
+      box-shadow: 0 2px 8px 0 var(--secondary);
       display: flex; align-items: center; justify-content: center;
-      font-size: 2em; color: white; font-weight: 700;
+      font-size: 1.3em; color: white; font-weight: 700;
       letter-spacing: -1px;
+      border: 2.5px solid #fff;
     }
     .logo-text {
-      font-size: 1.6em;
+      font-size: 1.3em;
       font-weight: 700;
       letter-spacing: -1px;
       color: var(--primary);
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       text-transform: lowercase;
+      margin-top: 2px;
     }
     .app-tagline {
       font-size: 1em;
       color: var(--dark);
       opacity: 0.7;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
+      font-style: italic;
       font-weight: 400;
+      letter-spacing: 0.2px;
     }
     /* Status panel */
     .status-panel {
       background: var(--glass);
       border-radius: var(--radius);
-      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
-      padding: 16px 18px;
-      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+      padding: 11px 14px;
+      margin-bottom: 6px;
     }
     .status-list { list-style: none; padding: 0; margin: 0;}
     .status-list li {
       display: flex; align-items: center; gap: 10px;
-      font-size: 1em; margin-bottom: 5px;
+      font-size: 1em; margin-bottom: 4px;
     }
     .status-list li:last-child { margin-bottom: 0;}
     .status-icon {
@@ -178,17 +183,17 @@
     .form-panel {
       background: var(--glass);
       border-radius: var(--radius);
-      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
-      padding: 18px 18px 12px 18px;
-      margin-bottom: 8px;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+      padding: 12px 12px 8px 12px;
+      margin-bottom: 6px;
     }
     .form-panel input[type="text"] {
       width: 100%;
-      padding: 10px 14px;
+      padding: 8px 12px;
       border: 1.5px solid var(--primary);
-      border-radius: 14px;
+      border-radius: 12px;
       font-size: 1em;
-      margin-bottom: 10px;
+      margin-bottom: 7px;
       background: rgba(255,255,255,0.8);
       color: var(--dark);
       transition: border 0.2s;
@@ -201,13 +206,13 @@
       background: linear-gradient(90deg, var(--primary), var(--secondary));
       color: white;
       border: none;
-      border-radius: 14px;
+      border-radius: 12px;
       font-size: 1em;
       font-weight: 600;
-      padding: 12px 0;
-      margin: 6px 0;
+      padding: 10px 0;
+      margin: 4px 0;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+      box-shadow: 0 2px 8px rgba(44,62,80,0.08);
       transition: background 0.2s, box-shadow 0.2s;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -223,36 +228,36 @@
       text-align: center;
       color: var(--dark);
       opacity: 0.5;
-      margin: 8px 0;
+      margin: 6px 0;
       font-size: 0.97em;
     }
     .error-message {
       background: rgba(255, 61, 111, 0.15);
       color: #FF3D6F;
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 8px 12px;
       font-size: 1em;
-      margin-top: 12px;
+      margin-top: 10px;
       display: none;
     }
     .copyright {
       position: fixed;
-      bottom: calc(var(--frame-thickness) + 10px);
-      right: calc(var(--frame-thickness) + 10px);
+      bottom: calc(var(--frame-thickness) + 7px);
+      right: calc(var(--frame-thickness) + 7px);
       font-size: 0.9em;
       color: var(--dark);
       opacity: 0.6;
       background: var(--glass);
-      border-radius: 16px;
+      border-radius: 12px;
       padding: 7px 14px;
       z-index: 10000;
-      box-shadow: 0 2px 8px rgba(44, 62, 80, 0.06);
+      box-shadow: 0 2px 8px rgba(44,62,80,0.06);
     }
     .copyright a { color: var(--primary); text-decoration: none;}
     .copyright a:hover { color: var(--accent);}
     @media (max-width: 600px) {
       :root { --sidebar-width: 95vw; }
-      .sidebar { padding: 18px 7vw 12px 7vw; }
+      .sidebar { padding: 12px 4vw 8px 4vw; }
     }
   </style>
 </head>
@@ -269,8 +274,10 @@
   </div>
   <div class="sidebar" id="sidebar">
     <div class="app-logo">
-      <div class="logo-circle">M</div>
-      <div class="logo-text">maplens</div>
+      <div class="logo-row">
+        <div class="logo-circle">M</div>
+        <div class="logo-text">maplens</div>
+      </div>
       <div class="app-tagline" data-el="Δες τον κόσμο αλλιώς" data-en="See the world differently">Δες τον κόσμο αλλιώς</div>
     </div>
     <div class="status-panel">
