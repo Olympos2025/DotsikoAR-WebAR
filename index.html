@@ -1,807 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MapLens</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-        #loading {
-        #ui-container {
-position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.9);
-            padding: 15px;
-            border-radius: 10px;
-            z-index: 10000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+:root {
+--primary: #2D9CDB;
+--secondary: #56CCF2;
+--accent: #6FCF97;
+--background: #F7FAFC;
+--dark: #222B45;
+--grid: #E0E7EF;
+      --glass: rgba(255,255,255,0.75);
+      --glass: rgba(255,255,255,0.78);
+--radius: 22px;
+--shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.08);
+--sidebar-width: 340px;
+@@ -47,7 +47,7 @@
+/* Tick marks */
+.tick-marks { position: absolute; inset: 0; pointer-events: none; }
+.tick-mark {
+      position: absolute; background: var(--primary); opacity: 0.5;
+      position: absolute; background: var(--primary); opacity: 0.4;
+z-index: 9999;
+border-radius: 2px;
 }
-        #kmlInput {
-            position: fixed;
-            top: 80px;
-            left: 20px;
-            z-index: 10000;
-            background: white;
-        .panel {
-            background-color: rgba(255, 255, 255, 0.8);
-padding: 10px;
-            border-radius: 5px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-        #skipGPS {
-            position: fixed;
-            top: 150px;
-            left: 20px;
-            z-index: 10000;
-            background: #ff4d4d;
-        #info-panel {
-            max-width: 250px;
-        }
-        #status {
-            color: #333;
-            font-weight: bold;
-        }
-        #accuracy {
-            color: green;
-        }
-        #datetime {
-            font-size: 0.9em;
-            color: #666;
-        }
-        #app-name {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .btn {
-            background-color: #4CAF50;
-color: white;
-            padding: 10px;
-            border-radius: 5px;
-border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        #file-input {
-            display: none;
-        }
-        #error-message {
-            color: red;
-            display: none;
-}
-</style>
-</head>
-<body style="margin: 0; overflow: hidden;">
-    <div id="loading">⌛ Ενεργοποίηση GPS...</div>
-    <input type="file" id="kmlInput" accept=".kml">
-    <button id="skipGPS">Παράκαμψη GPS</button>
-    
-    <!-- UI Elements -->
-    <div id="ui-container">
-        <div id="info-panel" class="panel">
-            <div id="app-name">DotsikoAR</div>
-            <div id="status">⌛ Αναμονή GPS...</div>
-            <div id="accuracy"></div>
-            <div id="datetime"></div>
-        </div>
-        
-        <div class="panel">
-            <input type="file" id="file-input" accept=".kml">
-            <button id="upload-btn" class="btn">Φόρτωση KML</button>
-            <div>ή</div>
-            <input type="text" id="url-input" placeholder="URL του KML αρχείου">
-            <button id="load-url-btn" class="btn">Φόρτωση από URL</button>
-        </div>
-        
-        <div class="panel">
-            <button id="toggle-btn" class="btn">Εμφάνιση/Απόκρυψη AR</button>
-            <button id="reset-btn" class="btn">Επαναφορά</button>
-        </div>
-        
-        <div id="error-message" class="panel"></div>
+@@ -119,7 +119,7 @@
+.app-logo { text-align: center; margin-bottom: 16px;}
+.logo-circle {
+width: 54px; height: 54px; margin: 0 auto 12px auto;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      background: var(--primary);
+border-radius: 50%;
+box-shadow: 0 4px 16px 0 var(--secondary), 0 2px 8px 0 var(--accent);
+display: flex; align-items: center; justify-content: center;
+@@ -288,4 +288,448 @@
+<button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
+</div>
+<div class="form-panel">
+      <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυ
+      <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
+      <button id="reset-btn" class="btn btn-alt" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
     </div>
+    <div id="error-message" class="error-message"></div>
+  </div>
+  <a-scene 
+    vr-mode-ui="enabled: false"
+    arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    embedded>
+    <a-camera gps-camera rotation-reader></a-camera>
+    <a-entity id="kml-container"></a-entity>
+  </a-scene>
+  <script>
+    // Tick marks
+    function createTickMarks() {
+      const tickMarks = document.getElementById('tick-marks');
+      tickMarks.innerHTML = '';
+      const w = window.innerWidth, h = window.innerHeight;
+      const frame = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--frame-thickness'));
+      const spacing = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-spacing'));
+      const len = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tick-length'));
+      // Top/bottom
+      for (let x = frame; x < w - frame; x += spacing) {
+        let t = document.createElement('div');
+        t.className = 'tick-mark h'; t.style.top = frame + 'px'; t.style.left = x + 'px';
+        tickMarks.appendChild(t);
+        let b = document.createElement('div');
+        b.className = 'tick-mark h'; b.style.bottom = frame + 'px'; b.style.left = x + 'px';
+        tickMarks.appendChild(b);
+      }
+      // Left/right
+      for (let y = frame; y < h - frame; y += spacing) {
+        let l = document.createElement('div');
+        l.className = 'tick-mark v'; l.style.left = frame + 'px'; l.style.top = y + 'px';
+        tickMarks.appendChild(l);
+        let r = document.createElement('div');
+        r.className = 'tick-mark v'; r.style.right = frame + 'px'; r.style.top = y + 'px';
+        tickMarks.appendChild(r);
+      }
+    }
+    window.addEventListener('resize', createTickMarks);
+    window.addEventListener('DOMContentLoaded', createTickMarks);
 
-    <!-- A-Frame Scene -->
-<a-scene 
-vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false;"
-        arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
-renderer="logarithmicDepthBuffer: true; precision: medium;"
-embedded>
+    // Sidebar menu
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    menuToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
 
-        
-<a-camera gps-camera rotation-reader></a-camera>
-<a-entity id="kml-container"></a-entity>
-</a-scene>
+    // Language switching
+    let currentLanguage = 'el';
+    const langEl = document.getElementById('lang-el');
+    const langEn = document.getElementById('lang-en');
+    langEl.addEventListener('click', () => setLanguage('el'));
+    langEn.addEventListener('click', () => setLanguage('en'));
+    function setLanguage(lang) {
+      currentLanguage = lang;
+      langEl.classList.toggle('active', lang === 'el');
+      langEn.classList.toggle('active', lang === 'en');
+      document.querySelectorAll('[data-el][data-en]').forEach(el => {
+        el.textContent = el.getAttribute(`data-${lang}`);
+      });
+      document.querySelectorAll('[data-el-placeholder][data-en-placeholder]').forEach(el => {
+        el.setAttribute('placeholder', el.getAttribute(`data-${lang}-placeholder`));
+      });
+    }
 
-<script>
-    // Για debugging
-    document.write('<script src="https://cdn.jsdelivr.net/npm/eruda"><\/script>');
-    document.write('<script>eruda.init();<\/script>');
+    // Date/time
+    function updateDateTime() {
+      document.getElementById('datetime').textContent =
+        new Date().toLocaleString(currentLanguage === 'el' ? 'el-GR' : 'en-US');
+      setTimeout(updateDateTime, 1000);
+    }
+    updateDateTime();
 
-    // Μεταβλητές
-    let userPosition = null;
-    let gpsTimeout;
+    // Translations
+    const translations = {
+      el: {
+        waiting: "⌛ Αναμονή GPS...",
+        active: "✅ GPS ενεργό",
+        loading: "⏳ Φόρτωση KML...",
+        loaded: "✅ KML φορτώθηκε!",
+        error: "❌ Σφάλμα!",
+        reset: "AR επαναφέρθηκε",
+        accuracy: "Ακρίβεια GPS: ",
+        notAvailable: "Ακρίβεια GPS: Μη διαθέσιμη",
+        urlRequired: "Παρακαλώ εισάγετε ένα URL!",
+        noPolygons: "Δεν βρέθηκαν πολύγωνα/γραμμές/σημεία στο KML!",
+        invalidXml: "Μη έγκυρο XML!",
+        readError: "Σφάλμα ανάγνωσης αρχείου!",
+        parseError: "Σφάλμα ανάλυσης KML: ",
+        downloadError: "Σφάλμα λήψης KML: ",
+        meters: "m",
+        hideAR: "Απόκρυψη AR",
+        showAR: "Εμφάνιση AR"
+      },
+      en: {
+        waiting: "⌛ Waiting for GPS...",
+        active: "✅ GPS active",
+        loading: "⏳ Loading KML...",
+        loaded: "✅ KML loaded!",
+        error: "❌ Error!",
+        reset: "AR reset",
+        accuracy: "GPS accuracy: ",
+        notAvailable: "GPS accuracy: Not available",
+        urlRequired: "Please enter a URL!",
+        noPolygons: "No polygons/lines/points found in the KML!",
+        invalidXml: "Invalid XML!",
+        readError: "Error reading file!",
+        parseError: "Error parsing KML: ",
+        downloadError: "Error downloading KML: ",
+        meters: "m",
+        hideAR: "Hide AR",
+        showAR: "Show AR"
+      }
+    };
 
-    // Χειρισμός αρχείου KML
-    document.getElementById('kmlInput').addEventListener('change', handleFileUpload);
+    // Status update
+    let arVisible = true, currentAccuracy = null, userPosition = null;
+    const statusEl = document.getElementById('status');
+    const accuracyEl = document.getElementById('accuracy');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const errorMessageEl = document.getElementById('error-message');
+    const kmlContainer = document.getElementById('kml-container');
+    toggleBtn.addEventListener('click', () => {
+      arVisible = !arVisible;
+      kmlContainer.setAttribute('visible', arVisible);
+      toggleBtn.textContent = arVisible ? translations[currentLanguage].hideAR : translations[currentLanguage].showAR;
+    });
+    resetBtn.addEventListener('click', () => {
+      kmlContainer.innerHTML = '';
+      statusEl.textContent = translations[currentLanguage].reset;
+    });
+
+    // GPS status
+    document.addEventListener('DOMContentLoaded', () => {
+      const camera = document.querySelector('a-camera');
+      camera.addEventListener('gps-camera-update-position', e => {
+        userPosition = e.detail.position;
+        statusEl.textContent = translations[currentLanguage].active;
+        let acc = null;
+        if (e.detail.position && e.detail.position.accuracy !== undefined) {
+          acc = e.detail.position.accuracy;
+        } else if (e.detail.accuracy !== undefined) {
+          acc = e.detail.accuracy;
+        }
+        if (acc !== null) {
+          currentAccuracy = acc;
+          accuracyEl.textContent = `${translations[currentLanguage].accuracy}±${currentAccuracy.toFixed(2)}${translations[currentLanguage].meters}`;
+          accuracyEl.className = 'accuracy-badge';
+          if (currentAccuracy <= 10) accuracyEl.style.background = "#6FCF97";
+          else if (currentAccuracy <= 20) accuracyEl.style.background = "#56CCF2";
+          else accuracyEl.style.background = "#F2994A";
+        } else {
+          accuracyEl.textContent = translations[currentLanguage].notAvailable;
+          accuracyEl.className = '';
+        }
+      });
+    });
+
+    // KML loading
+    const fileInput = document.getElementById('file-input');
+    const uploadBtn = document.getElementById('upload-btn');
+    const urlInput = document.getElementById('url-input');
+    const loadUrlBtn = document.getElementById('load-url-btn');
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileUpload);
+    loadUrlBtn.addEventListener('click', handleUrlLoad);
 
     function handleFileUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        // Global variables
-        let arVisible = true;
-        let currentAccuracy = 0;
-        let userPosition = null;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const polygons = parseKML(e.target.result);
-                if (!polygons || polygons.length === 0) {
-                    alert("Δεν βρέθηκαν πολύγωνα στο KML! Ελέγξτε τη δομή του αρχείου.");
-                    console.log("Περιεχόμενο KML:", e.target.result);
-                } else {
-                    document.getElementById('kml-container').innerHTML = '';
-                    polygons.forEach(polygon => addPolygonToAR(polygon));
-                    alert(`Βρέθηκαν ${polygons.length} πολύγωνα και προστέθηκαν στο AR!`);
-                }
-            } catch (err) {
-                console.error("Σφάλμα επεξεργασίας KML:", err);
-                alert("Σφάλμα επεξεργασίας KML: " + err.message);
-            }
-        };
-        reader.readAsText(file);
+      const file = e.target.files[0];
+      if (!file) return;
+      statusEl.textContent = translations[currentLanguage].loading;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const polygons = parseKML(e.target.result);
+          if (!polygons || polygons.length === 0) {
+            showError(translations[currentLanguage].noPolygons);
+          } else {
+            renderPolygons(polygons);
+            statusEl.textContent = translations[currentLanguage].loaded;
+          }
+        } catch (err) {
+          showError(translations[currentLanguage].parseError + err.message);
+        }
+      };
+      reader.onerror = function() {
+        showError(translations[currentLanguage].readError);
+      };
+      reader.readAsText(file);
     }
 
-    // Βελτιωμένος KML Parser
+    function handleUrlLoad() {
+      const url = urlInput.value.trim();
+      if (!url) {
+        showError(translations[currentLanguage].urlRequired);
+        return;
+      }
+      statusEl.textContent = translations[currentLanguage].loading;
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          return response.text();
+        })
+        .then(kmlText => {
+          try {
+            const polygons = parseKML(kmlText);
+            if (!polygons || polygons.length === 0) {
+              showError(translations[currentLanguage].noPolygons);
+            } else {
+              renderPolygons(polygons);
+              statusEl.textContent = translations[currentLanguage].loaded;
+            }
+          } catch (err) {
+            showError(translations[currentLanguage].parseError + err.message);
+          }
+        })
+        .catch(error => {
+          showError(translations[currentLanguage].downloadError + error.message);
+        });
+    }
+
+    function showError(message) {
+      errorMessageEl.textContent = message;
+      errorMessageEl.style.display = 'block';
+      setTimeout(() => { errorMessageEl.style.display = 'none'; }, 5000);
+      statusEl.textContent = translations[currentLanguage].error;
+    }
+
     function parseKML(kmlText) {
-        console.log("Ανάλυση KML:", kmlText.substring(0, 500) + "...");
-        // DOM Elements
-        const fileInput = document.getElementById('file-input');
-        const uploadBtn = document.getElementById('upload-btn');
-        const urlInput = document.getElementById('url-input');
-        const loadUrlBtn = document.getElementById('load-url-btn');
-        const toggleBtn = document.getElementById('toggle-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const statusEl = document.getElementById('status');
-        const accuracyEl = document.getElementById('accuracy');
-        const datetimeEl = document.getElementById('datetime');
-        const errorMessageEl = document.getElementById('error-message');
-        const kmlContainer = document.getElementById('kml-container');
-
-        const parser = new DOMParser();
-        const kmlDoc = parser.parseFromString(kmlText, "text/xml");
-        
-        // Έλεγχος για σφάλματα parsing
-        if (kmlDoc.getElementsByTagName('parsererror').length > 0) {
-            throw new Error("Μη έγκυρο XML/KML αρχείο");
-        // Initialize date & time
-        function updateDateTime() {
-            const now = new Date();
-            datetimeEl.textContent = now.toLocaleString('el-GR');
-}
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-
-        // Εμφάνιση του αριθμού των Placemarks
-        const placemarks = kmlDoc.getElementsByTagName('Placemark');
-        console.log(`Βρέθηκαν ${placemarks.length} Placemarks`);
-        
-        // Ψάχνουμε για Polygon, MultiGeometry, και LineString
-        const polygons = [];
-        // Event listeners
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileUpload);
-        loadUrlBtn.addEventListener('click', handleUrlLoad);
-        toggleBtn.addEventListener('click', toggleARVisibility);
-        resetBtn.addEventListener('click', resetAR);
-
-        for (const placemark of placemarks) {
-            // 1. Έλεγχος για απλά πολύγωνα
-            const polygonElements = placemark.getElementsByTagName('Polygon');
-            for (const poly of polygonElements) {
-                const coords = extractCoordinates(poly);
-                if (coords && coords.length > 2) {
-                    polygons.push(coords);
-                    console.log(`Βρέθηκε πολύγωνο με ${coords.length} σημεία`);
-        // Handle KML file upload
-        function handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            statusEl.textContent = "⏳ Φόρτωση KML...";
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const polygons = parseKML(e.target.result);
-                    if (!polygons || polygons.length === 0) {
-                        showError("Δεν βρέθηκαν πολύγωνα στο KML!");
-                    } else {
-                        renderPolygons(polygons);
-                        statusEl.textContent = "✅ KML φορτώθηκε!";
-                    }
-                } catch (err) {
-                    showError("Σφάλμα ανάλυσης KML: " + err.message);
-}
-            };
-            reader.onerror = function() {
-                showError("Σφάλμα ανάγνωσης αρχείου!");
-            };
-            reader.readAsText(file);
-        }
-        
-        // Handle KML URL loading
-        function handleUrlLoad() {
-            const url = urlInput.value.trim();
-            if (!url) {
-                showError("Παρακαλώ εισάγετε ένα URL!");
-                return;
-}
-
-            // 2. Έλεγχος για MultiGeometry
-            const multiGeo = placemark.getElementsByTagName('MultiGeometry');
-            for (const geo of multiGeo) {
-                const multiPolys = geo.getElementsByTagName('Polygon');
-                for (const poly of multiPolys) {
-                    const coords = extractCoordinates(poly);
-                    if (coords && coords.length > 2) {
-                        polygons.push(coords);
-                        console.log(`Βρέθηκε πολύγωνο σε MultiGeometry με ${coords.length} σημεία`);
-            statusEl.textContent = "⏳ Λήψη KML...";
-            
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-}
-                }
-                    return response.text();
-                })
-                .then(kmlText => {
-                    try {
-                        const polygons = parseKML(kmlText);
-                        if (!polygons || polygons.length === 0) {
-                            showError("Δεν βρέθηκαν πολύγωνα στο KML!");
-                        } else {
-                            renderPolygons(polygons);
-                            statusEl.textContent = "✅ KML φορτώθηκε!";
-                        }
-                    } catch (err) {
-                        showError("Σφάλμα ανάλυσης KML: " + err.message);
-                    }
-                })
-                .catch(error => {
-                    showError("Σφάλμα λήψης KML: " + error.message);
-                });
-        }
-        
-        // Parse KML to extract polygons
-        function parseKML(kmlText) {
-            const parser = new DOMParser();
-            const kmlDoc = parser.parseFromString(kmlText, "text/xml");
-            
-            // Detect parsing errors
-            const parserError = kmlDoc.getElementsByTagName('parsererror');
-            if (parserError.length > 0) {
-                throw new Error("Μη έγκυρο XML!");
-}
-
-            // 3. Έλεγχος για LineString (γραμμές που μπορούν να θεωρηθούν πολύγωνα)
-            const lineStrings = placemark.getElementsByTagName('LineString');
-            for (const line of lineStrings) {
-                const coords = extractCoordinates(line);
-                if (coords && coords.length > 2) {
-                    polygons.push(coords);
-                    console.log(`Βρέθηκε LineString με ${coords.length} σημεία`);
-            const polygons = [];
-            
-            // Look for different geometries
-            // 1. Standard Polygons
-            const placemarks = kmlDoc.getElementsByTagName('Placemark');
-            for (let i = 0; i < placemarks.length; i++) {
-                const placemark = placemarks[i];
-                
-                // Get placemark name if available
-                const nameEl = placemark.getElementsByTagName('name')[0];
-                const name = nameEl ? nameEl.textContent : "Polygon " + (i + 1);
-                
-                // Check for direct Polygon elements
-                const polygonElements = placemark.getElementsByTagName('Polygon');
-                for (let j = 0; j < polygonElements.length; j++) {
-                    const polygon = polygonElements[j];
-                    const coordsElements = polygon.getElementsByTagName('coordinates');
-                    
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        
-                        if (coords.length > 2) {
-                            polygons.push({
-                                type: 'polygon',
-                                name: name,
-                                points: coords
-                            });
-                        }
-                    }
-                }
-                
-                // Check for LineStrings
-                const lineElements = placemark.getElementsByTagName('LineString');
-                for (let j = 0; j < lineElements.length; j++) {
-                    const line = lineElements[j];
-                    const coordsElements = line.getElementsByTagName('coordinates');
-                    
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        
-                        if (coords.length > 1) {
-                            polygons.push({
-                                type: 'line',
-                                name: name,
-                                points: coords
-                            });
-                        }
-                    }
-                }
-                
-                // Check for Points
-                const pointElements = placemark.getElementsByTagName('Point');
-                for (let j = 0; j < pointElements.length; j++) {
-                    const point = pointElements[j];
-                    const coordsElements = point.getElementsByTagName('coordinates');
-                    
-                    if (coordsElements.length > 0) {
-                        const coordsText = coordsElements[0].textContent.trim();
-                        const coords = parseCoordinateString(coordsText);
-                        
-                        if (coords.length > 0) {
-                            polygons.push({
-                                type: 'point',
-                                name: name,
-                                points: coords
-                            });
-                        }
-                    }
-                }
-                
-                // Check for MultiGeometry (could contain multiple geometries)
-                const multiGeoElements = placemark.getElementsByTagName('MultiGeometry');
-                for (let j = 0; j < multiGeoElements.length; j++) {
-                    const multiGeo = multiGeoElements[j];
-                    
-                    // Check for polygons inside MultiGeometry
-                    const multiPolygons = multiGeo.getElementsByTagName('Polygon');
-                    for (let k = 0; k < multiPolygons.length; k++) {
-                        const polygon = multiPolygons[k];
-                        const coordsElements = polygon.getElementsByTagName('coordinates');
-                        
-                        if (coordsElements.length > 0) {
-                            const coordsText = coordsElements[0].textContent.trim();
-                            const coords = parseCoordinateString(coordsText);
-                            
-                            if (coords.length > 2) {
-                                polygons.push({
-                                    type: 'polygon',
-                                    name: name,
-                                    points: coords
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Similar checks for LineString and Point in MultiGeometry
-                    // (code omitted for brevity but follows same pattern)
-}
-}
-            
-            return polygons;
-}
-
-        return polygons;
-    }
-
-    // Βοηθητική συνάρτηση για εξαγωγή συντεταγμένων από στοιχείο
-    function extractCoordinates(element) {
-        const coordsElem = element.getElementsByTagName('coordinates')[0];
-        if (!coordsElem) return null;
-        
-        const coordsText = coordsElem.textContent.trim();
-        const pairs = coordsText.split(/\s+/);
-        
-        const points = [];
-        for (const pair of pairs) {
-            const values = pair.split(',');
-            if (values.length >= 2) {
-                const lon = parseFloat(values[0]);
-                const lat = parseFloat(values[1]);
-                if (!isNaN(lon) && !isNaN(lat)) {
-                    points.push({lat, lon});
-        // Parse coordinate string into array of lat/lon objects
-        function parseCoordinateString(coordsText) {
-            const coordinates = [];
-            const coordPairs = coordsText.split(/\s+/);
-            
-            for (let i = 0; i < coordPairs.length; i++) {
-                const pair = coordPairs[i].trim();
-                if (!pair) continue;
-                
-                const coords = pair.split(',');
-                if (coords.length >= 2) {
-                    const lon = parseFloat(coords[0]);
-                    const lat = parseFloat(coords[1]);
-                    
-                    if (!isNaN(lon) && !isNaN(lat)) {
-                        coordinates.push({ lat, lon });
-                    }
-}
-}
-            
-            return coordinates;
-}
-
-        return points;
-    }
-
-    // Προσθήκη πολυγώνου στο AR
-    function addPolygonToAR(polygon) {
-        // Υπολογισμός κέντρου πολυγώνου
-        let avgLat = 0, avgLon = 0;
-        polygon.forEach(p => { 
-            avgLat += p.lat; 
-            avgLon += p.lon; 
-        });
-        avgLat /= polygon.length;
-        avgLon /= polygon.length;
-        // Render polygons in AR
-        function renderPolygons(polygons) {
-            // Clear existing elements
-            kmlContainer.innerHTML = '';
-            
-            polygons.forEach((polygon, index) => {
-                if (polygon.type === 'polygon') {
-                    renderPolygon(polygon, index);
-                } else if (polygon.type === 'line') {
-                    renderLine(polygon, index);
-                } else if (polygon.type === 'point') {
-                    renderPoint(polygon, index);
-                }
-            });
-        }
-
-        // Δημιουργία γραμμών για το περίγραμμα
-        for (let i = 0; i < polygon.length; i++) {
-            const p1 = polygon[i];
-            const p2 = polygon[(i+1) % polygon.length];
-        // Render polygon
-        function renderPolygon(polygon, index) {
-            const points = polygon.points;
-
-            // Δημιουργία γραμμής μεταξύ δύο σημείων
-            const line = document.createElement('a-entity');
-            line.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
-            // Create lines for polygon edges
-            for (let i = 0; i < points.length; i++) {
-                const p1 = points[i];
-                const p2 = points[(i + 1) % points.length];
-                
-                // Create a line entity
-                const line = document.createElement('a-entity');
-                line.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
-                line.setAttribute('line', {
-                    start: '0 0 0',
-                    end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: 'red',
-                    opacity: 0.8,
-                    width: 5
-                });
-                kmlContainer.appendChild(line);
+      const parser = new DOMParser();
+      const kmlDoc = parser.parseFromString(kmlText, "text/xml");
+      const parserError = kmlDoc.getElementsByTagName('parsererror');
+      if (parserError.length > 0) throw new Error(translations[currentLanguage].invalidXml);
+      const polygons = [];
+      const placemarks = kmlDoc.getElementsByTagName('Placemark');
+      for (let i = 0; i < placemarks.length; i++) {
+        const placemark = placemarks[i];
+        const nameEl = placemark.getElementsByTagName('name')[0];
+        const name = nameEl ? nameEl.textContent : "Στοιχείο " + (i + 1);
+        // Πολύγωνα
+        const polygonElements = placemark.getElementsByTagName('Polygon');
+        for (let j = 0; j < polygonElements.length; j++) {
+          const polygon = polygonElements[j];
+          const coordsElements = polygon.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 2) {
+              polygons.push({type: 'polygon', name, points: coords});
             }
-            
-            // Create a semi-transparent fill for the polygon
-            // Calculate center point of polygon
-            let avgLat = 0, avgLon = 0;
-            points.forEach(p => {
-                avgLat += p.lat;
-                avgLon += p.lon;
-            });
-            avgLat /= points.length;
-            avgLon /= points.length;
-
-            // Υπολογισμός διαφοράς σε μέτρα μεταξύ των σημείων
-            const dx = geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon);
-            // Calculate approximate size of polygon (simplified)
-            let maxDistance = 0;
-            points.forEach(p => {
-                const distance = geoDistance(avgLat, avgLon, p.lat, p.lon);
-                if (distance > maxDistance) maxDistance = distance;
-            });
-
-            line.setAttribute('line', {
-                start: '0 0 0',
-                end: `${dx.x} 0 ${dx.z}`,
-                color: 'red',
-                opacity: 0.8,
-                width: 5
-            // Create polygon fill as a plane
-            const fill = document.createElement('a-entity');
-            fill.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
-            fill.setAttribute('geometry', {
-                primitive: 'plane',
-                width: maxDistance * 2,
-                height: maxDistance * 2
-            });
-            fill.setAttribute('material', {
-                color: 'blue',
-                opacity: 0.3,
-                transparent: true,
-                side: 'double'
-});
-            fill.setAttribute('rotation', '-90 0 0');
-            kmlContainer.appendChild(fill);
-
-            document.getElementById('kml-container').appendChild(line);
-            // Add text label with the name
-            const text = document.createElement('a-text');
-            text.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
-            text.setAttribute('value', polygon.name);
-            text.setAttribute('scale', '5 5 5');
-            text.setAttribute('look-at', '[gps-camera]');
-            text.setAttribute('align', 'center');
-            text.setAttribute('color', 'white');
-            text.setAttribute('position', '0 10 0');
-            kmlContainer.appendChild(text);
-}
-
-        // Προσθήκη διαφανούς επιφάνειας στο κέντρο του πολυγώνου
-        const surface = document.createElement('a-entity');
-        surface.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
-        
-        // Υπολογισμός μεγέθους σε μέτρα (απλοποιημένο)
-        const size = calculatePolygonSize(polygon);
-        
-        surface.setAttribute('geometry', {
-            primitive: 'plane',
-            width: size,
-            height: size
-        });
-        
-        surface.setAttribute('material', {
-            color: 'blue',
-            opacity: 0.3,
-            transparent: true,
-            side: 'double'
-        });
-        // Render line
-        function renderLine(line, index) {
-            const points = line.points;
-            
-            for (let i = 0; i < points.length - 1; i++) {
-                const p1 = points[i];
-                const p2 = points[i + 1];
-                
-                const lineEntity = document.createElement('a-entity');
-                lineEntity.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
-                lineEntity.setAttribute('line', {
-                    start: '0 0 0',
-                    end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
-                    color: 'green',
-                    opacity: 0.8,
-                    width: 3
-                });
-                kmlContainer.appendChild(lineEntity);
-            }
-            
-            // Add label at the center of the line
-            if (points.length > 0) {
-                const midPoint = points[Math.floor(points.length / 2)];
-                const text = document.createElement('a-text');
-                text.setAttribute('gps-entity-place', `latitude: ${midPoint.lat}; longitude: ${midPoint.lon}`);
-                text.setAttribute('value', line.name);
-                text.setAttribute('scale', '5 5 5');
-                text.setAttribute('look-at', '[gps-camera]');
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', 'white');
-                text.setAttribute('position', '0 10 0');
-                kmlContainer.appendChild(text);
-            }
+          }
         }
-
-        surface.setAttribute('rotation', '-90 0 0');
-        document.getElementById('kml-container').appendChild(surface);
+        // Γραμμές
+        const lineElements = placemark.getElementsByTagName('LineString');
+        for (let j = 0; j < lineElements.length; j++) {
+          const line = lineElements[j];
+          const coordsElements = line.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 1) {
+              polygons.push({type: 'line', name, points: coords});
+            }
+          }
+        }
+        // Σημεία
+        const pointElements = placemark.getElementsByTagName('Point');
+        for (let j = 0; j < pointElements.length; j++) {
+          const point = pointElements[j];
+          const coordsElements = point.getElementsByTagName('coordinates');
+          if (coordsElements.length > 0) {
+            const coordsText = coordsElements[0].textContent.trim();
+            const coords = parseCoordinateString(coordsText);
+            if (coords.length > 0) {
+              polygons.push({type: 'point', name, points: coords});
+            }
+          }
+        }
+      }
+      return polygons;
     }
-
-    // Υπολογισμός μεγέθους πολυγώνου
-    function calculatePolygonSize(polygon) {
-        let minLat = 90, maxLat = -90;
-        let minLon = 180, maxLon = -180;
-        // Render point
-        function renderPoint(point, index) {
-            if (point.points.length > 0) {
-                const p = point.points[0];
-                
-                // Create a sphere for the point
-                const sphere = document.createElement('a-sphere');
-                sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                sphere.setAttribute('color', 'yellow');
-                sphere.setAttribute('radius', '2');
-                sphere.setAttribute('position', '0 0 0');
-                kmlContainer.appendChild(sphere);
-                
-                // Add label
-                const text = document.createElement('a-text');
-                text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-                text.setAttribute('value', point.name);
-                text.setAttribute('scale', '5 5 5');
-                text.setAttribute('look-at', '[gps-camera]');
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', 'white');
-                text.setAttribute('position', '0 10 0');
-                kmlContainer.appendChild(text);
-            }
+    function parseCoordinateString(coordsText) {
+      const coordinates = [];
+      const coordPairs = coordsText.split(/\s+/);
+      for (let i = 0; i < coordPairs.length; i++) {
+        const pair = coordPairs[i].trim();
+        if (!pair) continue;
+        const coords = pair.split(',');
+        if (coords.length >= 2) {
+          const lon = parseFloat(coords[0]);
+          const lat = parseFloat(coords[1]);
+          if (!isNaN(lon) && !isNaN(lat)) {
+            coordinates.push({ lat, lon });
+          }
         }
-
-        polygon.forEach(point => {
-            minLat = Math.min(minLat, point.lat);
-            maxLat = Math.max(maxLat, point.lat);
-            minLon = Math.min(minLon, point.lon);
-            maxLon = Math.max(maxLon, point.lon);
-        });
-        // Toggle AR visibility
-        function toggleARVisibility() {
-            arVisible = !arVisible;
-            kmlContainer.setAttribute('visible', arVisible);
-            toggleBtn.textContent = arVisible ? 'Απόκρυψη AR' : 'Εμφάνιση AR';
-        }
-
-        // Μετατροπή σε μέτρα και επιλογή του μεγαλύτερου
-        const width = geoToMeters(minLat, minLon, minLat, maxLon).x;
-        const height = geoToMeters(minLat, minLon, maxLat, minLon).z;
-        // Reset AR scene
-        function resetAR() {
-            kmlContainer.innerHTML = '';
-            statusEl.textContent = "AR επαναφέρθηκε";
-        }
-
-        return Math.max(width, height);
+      }
+      return coordinates;
     }
-
-    // Μετατροπή γεωγραφικών συντεταγμένων σε μέτρα
+    function renderPolygons(polygons) {
+      kmlContainer.innerHTML = '';
+      polygons.forEach((polygon, index) => {
+        if (polygon.type === 'polygon') {
+          renderPolygon(polygon, index);
+        } else if (polygon.type === 'line') {
+          renderLine(polygon, index);
+        } else if (polygon.type === 'point') {
+          renderPoint(polygon, index);
+        }
+      });
+    }
+    function renderPolygon(polygon, index) {
+      const points = polygon.points;
+      for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        const line = document.createElement('a-entity');
+        line.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
+        line.setAttribute('line', {
+          start: '0 0 0',
+          end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
+          color: '#2D9CDB',
+          opacity: 0.85,
+          width: 6
+        });
+        kmlContainer.appendChild(line);
+      }
+      let avgLat = 0, avgLon = 0;
+      points.forEach(p => { avgLat += p.lat; avgLon += p.lon; });
+      avgLat /= points.length;
+      avgLon /= points.length;
+      let maxDistance = 0;
+      points.forEach(p => {
+        const distance = geoDistance(avgLat, avgLon, p.lat, p.lon);
+        if (distance > maxDistance) maxDistance = distance;
+      });
+      const fill = document.createElement('a-entity');
+      fill.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
+      fill.setAttribute('geometry', {
+        primitive: 'plane',
+        width: maxDistance * 2,
+        height: maxDistance * 2
+      });
+      fill.setAttribute('material', {
+        color: '#56CCF2',
+        opacity: 0.25,
+        transparent: true,
+        side: 'double'
+      });
+      fill.setAttribute('rotation', '-90 0 0');
+      kmlContainer.appendChild(fill);
+      const text = document.createElement('a-text');
+      text.setAttribute('gps-entity-place', `latitude: ${avgLat}; longitude: ${avgLon}`);
+      text.setAttribute('value', polygon.name);
+      text.setAttribute('scale', '7 7 7');
+      text.setAttribute('look-at', '[gps-camera]');
+      text.setAttribute('align', 'center');
+      text.setAttribute('color', '#2D9CDB');
+      text.setAttribute('position', '0 12 0');
+      kmlContainer.appendChild(text);
+    }
+    function renderLine(line, index) {
+      const points = line.points;
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const lineEntity = document.createElement('a-entity');
+        lineEntity.setAttribute('gps-entity-place', `latitude: ${p1.lat}; longitude: ${p1.lon}`);
+        lineEntity.setAttribute('line', {
+          start: '0 0 0',
+          end: `${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).x} 0 ${geoToMeters(p1.lat, p1.lon, p2.lat, p2.lon).z}`,
+          color: '#6FCF97',
+          opacity: 0.9,
+          width: 4
+        });
+        kmlContainer.appendChild(lineEntity);
+      }
+      if (points.length > 0) {
+        const midPoint = points[Math.floor(points.length / 2)];
+        const text = document.createElement('a-text');
+        text.setAttribute('gps-entity-place', `latitude: ${midPoint.lat}; longitude: ${midPoint.lon}`);
+        text.setAttribute('value', line.name);
+        text.setAttribute('scale', '6 6 6');
+        text.setAttribute('look-at', '[gps-camera]');
+        text.setAttribute('align', 'center');
+        text.setAttribute('color', '#2D9CDB');
+        text.setAttribute('position', '0 10 0');
+        kmlContainer.appendChild(text);
+      }
+    }
+    function renderPoint(point, index) {
+      if (point.points.length > 0) {
+        const p = point.points[0];
+        const sphere = document.createElement('a-sphere');
+        sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        sphere.setAttribute('color', '#6FCF97');
+        sphere.setAttribute('radius', '2.5');
+        sphere.setAttribute('position', '0 0 0');
+        kmlContainer.appendChild(sphere);
+        const text = document.createElement('a-text');
+        text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        text.setAttribute('value', point.name);
+        text.setAttribute('scale', '5 5 5');
+        text.setAttribute('look-at', '[gps-camera]');
+        text.setAttribute('align', 'center');
+        text.setAttribute('color', '#2D9CDB');
+        text.setAttribute('position', '0 8 0');
+        kmlContainer.appendChild(text);
+      }
+    }
     function geoToMeters(lat1, lon1, lat2, lon2) {
-        const R = 6378137; // ακτίνα της Γης σε μέτρα
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const lat1Rad = lat1 * Math.PI / 180;
-        // Show error message
-        function showError(message) {
-            errorMessageEl.textContent = message;
-            errorMessageEl.style.display = 'block';
-            setTimeout(() => {
-                errorMessageEl.style.display = 'none';
-            }, 5000);
-            statusEl.textContent = "❌ Σφάλμα!";
-        }
-
-        const x = R * dLon * Math.cos(lat1Rad);
-        const z = R * dLat;
-        // Convert geo coordinates to meters relative to a reference point
-        function geoToMeters(lat1, lon1, lat2, lon2) {
-            const R = 6378137; // Earth's radius in meters
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distance = R * c;
-            
-            // Calculate x and z components
-            const y = 0; // y is always 0 for our ground-level features
-            const bearing = Math.atan2(
-                Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
-                Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-                Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
-            );
-            
-            const x = distance * Math.sin(bearing);
-            const z = distance * Math.cos(bearing);
-            
-            return { x, y, z };
-        }
-
-        return { x, z };
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      const bearing = Math.atan2(
+        Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
+        Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+        Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
+      );
+      const x = distance * Math.sin(bearing);
+      const z = distance * Math.cos(bearing);
+      return { x, y: 0, z };
     }
-
-    // Χειρισμός GPS
-    document.addEventListener('DOMContentLoaded', function() {
-        // Ορίζουμε timeout 15 δευτερολέπτων για το GPS
-        gpsTimeout = setTimeout(function() {
-            document.getElementById('loading').innerHTML = "❌ Αποτυχία GPS. Δοκιμάστε παράκαμψη ή επανεκκίνηση.";
-        }, 15000);
-        // Calculate geodesic distance between two points
-        function geoDistance(lat1, lon1, lat2, lon2) {
-            const R = 6378137; // Earth's radius in meters
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // Παράκαμψη GPS
-        document.getElementById('skipGPS').addEventListener('click', function() {
-            clearTimeout(gpsTimeout);
-            document.getElementById('loading').style.display = 'none';
-        // AR scene initialization and location handling
-        document.addEventListener('DOMContentLoaded', () => {
-            const camera = document.querySelector('a-camera');
-            
-            // When we get GPS position
-            camera.addEventListener('gps-camera-update-position', e => {
-                userPosition = e.detail.position;
-                statusEl.textContent = "✅ GPS ενεργό";
-                
-                // Update accuracy display
-                if (e.detail.accuracy) {
-                    currentAccuracy = e.detail.accuracy;
-                    accuracyEl.textContent = `Ακρίβεια GPS: ±${currentAccuracy.toFixed(2)}m`;
-                    
-                    // Change color based on accuracy
-                    if (currentAccuracy <= 10) {
-                        accuracyEl.style.color = 'green';
-                    } else if (currentAccuracy <= 20) {
-                        accuracyEl.style.color = 'orange';
-                    } else {
-                        accuracyEl.style.color = 'red';
-                    }
-                }
-            });
-
-            // Χρησιμοποιούμε σταθερή τοποθεσία
-            userPosition = {latitude: 40.6401, longitude: 22.9444};
-            alert("Το GPS παρακάμφθηκε. Μπορείτε να ανεβάσετε KML αλλά η ευθυγράμμιση θα είναι προσεγγιστική.");
-            // Touch event for placing markers
-            document.addEventListener('touchend', e => {
-                if (arVisible && userPosition) {
-                    // Place a marker where user taps
-                    const touchX = e.changedTouches[0].clientX;
-                    const touchY = e.changedTouches[0].clientY;
-                    
-                    // Create a marker that is placed slightly in front of the user
-                    const marker = document.createElement('a-sphere');
-                    marker.setAttribute('gps-entity-place', `latitude: ${userPosition.latitude}; longitude: ${userPosition.longitude}`);
-                    marker.setAttribute('color', 'red');
-                    marker.setAttribute('radius', '1');
-                    marker.setAttribute('position', '0 0 -10');
-                    kmlContainer.appendChild(marker);
-                    
-                    // Show feedback
-                    statusEl.textContent = "📍 Δείκτης τοποθετήθηκε";
-                }
-            });
-});
-    });
-
-    // Listener για το πότε το ARjs/GPS-camera έχει θέση
-    const camera = document.querySelector('a-camera');
-    camera.addEventListener('gps-camera-update-position', function(e) {
-        clearTimeout(gpsTimeout);
-        document.getElementById('loading').style.display = 'none';
-        userPosition = e.detail.position;
-        console.log('GPS ενεργό!', userPosition);
-    });
-</script>
+    function geoDistance(lat1, lon1, lat2, lon2) {
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+  </script>
 </body>
 </html>
