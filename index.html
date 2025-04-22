@@ -1,42 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="el">
 <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="author" content="Thomas G. Lagkas">
     <title>MapLens - WebAR KML Viewer</title>
-    <style>
-        body { margin: 0; padding: 0; }
-        #file-input { position: fixed; top: 20px; left: 20px; z-index: 1000; }
-        #controls { position: fixed; bottom: 20px; left: 20px; z-index: 1000; }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Βασικές βιβλιοθήκες -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@2.1.0/dist/toGeoJSON.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
 <body>
-    <input type="file" id="file-input" accept=".kml" multiple>
-    <div id="controls">
-        <button id="clear-button">Καθαρισμός</button>
+    <!-- Glassmorphism Header -->
+    <header class="app-header">
+        <h1 class="app-title">MapLens</h1>
+    </header>
+    
+    <!-- File Input with Modern Styling -->
+    <div class="file-input-container">
+        <label for="file-input" class="file-input-label">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Επιλογή KML Αρχείων
+        </label>
+        <input type="file" id="file-input" accept=".kml" multiple>
     </div>
-
-    <a-scene
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
-        renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
-        
-        <!-- Κάμερα με location-based tracking -->
-        <a-camera
-            gps-new-camera
-            gps-min-distance="20"
-            gps-max-distance="20000"
-            gps-heading-tolerance="10"
-            gps-altitude-enabled="true">
-        </a-camera>
-
-        <!-- AR content container -->
-        <a-entity id="ar-container"></a-entity>
-    </a-scene>
-
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@2.1.0/dist/toGeoJSON.js"></script>
-    <script src="https://raw.githubusercontent.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
-    <script src="https://raw.githubusercontent.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+    
+    <!-- Status Indicators -->
+    <div class="status-container">
+        <div class="status-pill">
+            <span class="status-indicator" id="camera-indicator"></span>
+            <span id="camera-status">Κάμερα: Ανενεργή</span>
+        </div>
+        <div class="status-pill">
+            <span class="status-indicator" id="gps-indicator"></span>
+            <span id="gps-status">GPS: Ανενεργό</span>
+        </div>
+    </div>
+    
+    <!-- Neumorphic Control Panel -->
+    <div class="control-panel">
+        <button id="clear-button" class="neo-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            Καθαρισμός
+        </button>
+        <button id="refresh-button" class="neo-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Ανανέωση
+        </button>
+    </div>
+    
+    <!-- Loading Animation -->
+    <div class="loading-container" id="loading">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+    </div>
+    
+    <!-- AR Scene -->
+    <div id="ar-view">
+        <a-scene
+            vr-mode-ui="enabled: false"
+            arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
+            renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
+            
+            <!-- Κάμερα με location-based tracking -->
+            <a-camera
+                gps-new-camera="gpsMinDistance: 20; gpsMaxDistance: 20000; positionMinAccuracy: 1000"
+                gps-camera-debug
+                rotation-reader
+                look-controls="enabled: true; reverseMouseDrag: true;"
+                cursor="rayOrigin: mouse;"
+                wasd-controls="enabled: false">
+            </a-camera>
+            
+            <!-- AR content container -->
+            <a-entity id="ar-container"></a-entity>
+        </a-scene>
+    </div>
+    
     <script src="kml-parser.js"></script>
     <script src="ar-manager.js"></script>
+    
+    <script>
+        // Έλεγχος κατάστασης κάμερας και GPS
+        document.addEventListener('DOMContentLoaded', () => {
+            // Έλεγχος συμβατότητας browser
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (!isMobile) {
+                alert("Η εφαρμογή WebAR λειτουργεί καλύτερα σε κινητές συσκευές.");
+            }
+
+            // Ζητάμε άδεια κάμερας με το που φορτώνει η σελίδα
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                    .then(function(stream) {
+                        console.log("Camera access granted");
+                        document.getElementById('camera-status').textContent = 'Κάμερα: Ενεργή';
+                        document.getElementById('camera-indicator').classList.add('active');
+                        // Απενεργοποιούμε το stream, το AR.js θα το ξαναζητήσει
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(function(error) {
+                        console.error("Camera access denied", error);
+                        alert("Παρακαλώ επιτρέψτε την πρόσβαση στην κάμερα για να λειτουργήσει η εφαρμογή AR");
+                    });
+            } else {
+                console.error("mediaDevices not supported");
+                alert("Ο browser σας δεν υποστηρίζει πρόσβαση στην κάμερα");
+            }
+            
+            // Έλεγχος GPS
+            const gpsOptions = {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 27000
+            };
+            
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    document.getElementById('gps-status').textContent = 'GPS: Ενεργό';
+                    document.getElementById('gps-indicator').classList.add('active');
+                    console.log(`Lat: ${position.coords.latitude}, Lon: ${position.coords.longitude}, Accuracy: ${position.coords.accuracy}m`);
+                    
+                    // Κρύβουμε το loading όταν έχουμε GPS
+                    document.getElementById('loading').style.display = 'none';
+                },
+                (error) => {
+                    document.getElementById('gps-status').textContent = 'GPS: Ανενεργό';
+                    console.error('GPS error:', error.message);
+                    
+                    if (error.code === error.PERMISSION_DENIED) {
+                        alert("Παρακαλώ επιτρέψτε την πρόσβαση στην τοποθεσία για να λειτουργήσει η εφαρμογή AR");
+                    }
+                },
+                gpsOptions
+            );
+            
+            // Safari iOS workaround
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            if (isSafari) {
+                document.querySelector('a-scene').setAttribute('device-orientation-permission-ui', 'enabled: true');
+                // Εφαρμόζουμε εναλλακτική προσέγγιση για το Safari
+                window.addEventListener('deviceorientation', function(event) {
+                    // Ενεργοποιεί τον προσανατολισμό συσκευής για iOS
+                }, true);
+            }
+            
+            // Κουμπί ανανέωσης
+            document.getElementById('refresh-button').addEventListener('click', () => {
+                location.reload();
+            });
+            
+            // Αυτόματη επανάληψη αιτήματος κάμερας αν αποτύχει
+            setTimeout(() => {
+                const scene = document.querySelector('a-scene');
+                if (scene) {
+                    if (!scene.is('ar-mode')) {
+                        console.log("Προσπάθεια επανασύνδεσης κάμερας...");
+                        scene.setAttribute('arjs', 'sourceType: webcam; videoTexture: true; debugUIEnabled: false');
+                    }
+                }
+            }, 5000);
+        });
+    </script>
 </body>
 </html>
