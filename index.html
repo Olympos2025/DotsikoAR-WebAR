@@ -4,12 +4,10 @@
   <meta charset="utf-8">
   <title>MapLens</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <!-- A-Frame & AR.js -->
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-  <!-- Google Fonts -->
+  <!-- Σωστή έκδοση A-Frame και AR.js για GPS AR -->
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
-  <!-- Feather Icons for SVGs -->
   <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
   <style>
     :root {
@@ -43,7 +41,6 @@
       background: var(--background-dark);
       color: #e7eaf1;
     }
-    /* Frame/Grid */
     .frame-container {
       position: fixed; inset: 0; z-index: 9998; pointer-events: none;
       background:
@@ -61,7 +58,6 @@
         linear-gradient(to right, var(--secondary) 1px, transparent 1px) repeat-x,
         linear-gradient(to bottom, var(--secondary) 1px, transparent 1px) repeat-y;
     }
-    /* Tick marks */
     .tick-marks { position: absolute; inset: 0; pointer-events: none; }
     .tick-mark {
       position: absolute; background: var(--primary); opacity: 0.21;
@@ -71,7 +67,6 @@
     .tick-mark.h { width: 2px; height: var(--tick-length);}
     .tick-mark.v { height: 2px; width: var(--tick-length);}
     body.dark .tick-mark { background: var(--secondary);}
-    /* Hamburger */
     #menu-toggle {
       position: fixed;
       top: calc(var(--frame-thickness) + 12px);
@@ -107,7 +102,6 @@
     #menu-toggle.open .hamburger span:nth-child(3) {
       top: 11px; transform: rotate(-45deg);
     }
-    /* Language selector & dark mode */
     .top-controls {
       position: fixed;
       top: calc(var(--frame-thickness) + 12px);
@@ -136,7 +130,6 @@
       background: var(--primary); color: white; border-color: var(--secondary);
     }
     .dark-toggle svg { width: 20px; height: 20px; }
-    /* Sidebar */
     .sidebar {
       position: fixed;
       top: var(--frame-thickness);
@@ -335,7 +328,7 @@
       <button id="lang-en" aria-pressed="false" aria-label="English">EN</button>
     </div>
     <button class="dark-toggle" id="dark-toggle" aria-label="Dark mode">
-      <svg id="dark-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2D9CDB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>
+      <svg id="dark-icon"></svg>
     </button>
   </div>
   <div class="copyright">
@@ -371,10 +364,11 @@
   </div>
   <a-scene 
     vr-mode-ui="enabled: false"
-    arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
     renderer="logarithmicDepthBuffer: true; precision: medium;"
-    embedded>
-    <a-camera gps-camera rotation-reader></a-camera>
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false;"
+  >
+    <a-camera gps-new-camera rotation-reader id="gps-camera"></a-camera>
     <a-entity id="kml-container"></a-entity>
   </a-scene>
   <script>
@@ -521,9 +515,9 @@
       statusEl.textContent = translations[currentLanguage].reset;
     });
 
-    // GPS status
+    // GPS status (ΔΙΟΡΘΩΜΕΝΟ για gps-new-camera)
     document.addEventListener('DOMContentLoaded', () => {
-      const camera = document.querySelector('a-camera');
+      const camera = document.querySelector('#gps-camera');
       camera.addEventListener('gps-camera-update-position', e => {
         userPosition = e.detail.position;
         statusEl.textContent = translations[currentLanguage].active;
@@ -782,4 +776,50 @@
       if (point.points.length > 0) {
         const p = point.points[0];
         const sphere = document.createElement('a-sphere');
-        sphere.setAttribute('gps-entity-place', `
+        sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        sphere.setAttribute('color', '#6FCF97');
+        sphere.setAttribute('radius', '2.5');
+        sphere.setAttribute('position', '0 0 0');
+        kmlContainer.appendChild(sphere);
+        const text = document.createElement('a-text');
+        text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
+        text.setAttribute('value', point.name);
+        text.setAttribute('scale', '5 5 5');
+        text.setAttribute('look-at', '[gps-camera]');
+        text.setAttribute('align', 'center');
+        text.setAttribute('color', '#2D9CDB');
+        text.setAttribute('position', '0 8 0');
+        kmlContainer.appendChild(text);
+      }
+    }
+    function geoToMeters(lat1, lon1, lat2, lon2) {
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const distance = R * c;
+      const bearing = Math.atan2(
+        Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
+        Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+        Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
+      );
+      const x = distance * Math.sin(bearing);
+      const z = distance * Math.cos(bearing);
+      return { x, y: 0, z };
+    }
+    function geoDistance(lat1, lon1, lat2, lon2) {
+      const R = 6378137;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+  </script>
+</body>
+</html>
