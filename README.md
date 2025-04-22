@@ -1,24 +1,34 @@
-# DotsikoAR-WebAR
+# MapLens - WebAR KML Viewer
 
-A WebAR application that loads a KML file and displays its points/polylines as AR objects in the browser.
+Η εφαρμογή MapLens είναι μια προηγμένη WebAR εφαρμογή που επιτρέπει στους χρήστες να οπτικοποιούν KML αρχεία σε επαυξημένη πραγματικότητα, προβάλλοντάς τα στο φυσικό περιβάλλον μέσω της κάμερας του κινητού τους.
 
-## Usage
+## Χαρακτηριστικά
 
-1. Host these files on GitHub Pages or any static web server.
-2. Open `index.html` on a mobile browser (Safari iOS or Chrome Android).
-3. Allow camera and location permissions.
-4. Walk around and see the KML points rendered as red spheres at their geographic positions.
+- Φόρτωση πολλαπλών KML αρχείων
+- Υποστήριξη πολυγώνων, γραμμών και σημείων
+- Ημιδιαφανή πολύγωνα και αδιαφανείς γραμμές
+- Ανίχνευση θέσης και προσανατολισμού (20χλμ εμβέλεια)
+- Διαισθητική διεπαφή με σύγχρονο σχεδιασμό
 
-## Hosting on GitHub Pages
+## Χρήση
 
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YourUser/DotsikoAR-WebAR.git
-git push -u origin main
-```
+1. Επισκεφθείτε: [https://olympos2025.github.io/DotsikoAR-WebAR/](https://olympos2025.github.io/DotsikoAR-WebAR/)
+2. Επιτρέψτε πρόσβαση στην κάμερα και την τοποθεσία
+3. Πατήστε "Επιλογή KML Αρχείων" και επιλέξτε KML αρχεία
+4. Στρέψτε την κάμερα προς το βουνό ή την περιοχή ενδιαφέροντος
+5. Τα KML στοιχεία θα εμφανιστούν στην πραγματική τους θέση
 
-On GitHub, go to **Settings > Pages**, set **Branch** to `main` and **Folder** to `/root`.  
-Visit the provided URL to see the WebAR app.
+## Τεχνολογίες
+
+- A-Frame
+- AR.js
+- HTML5, CSS3, JavaScript
+
+## Συγγραφέας
+
+Thomas G. Lagkas  
+[thomas.lagkas@outlook.com](mailto:thomas.lagkas@outlook.com)
+
+## Άδεια Χρήσης
+
+MIT License
