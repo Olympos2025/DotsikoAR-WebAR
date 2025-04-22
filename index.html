@@ -156,7 +156,6 @@
     }
     body.dark .sidebar { background: var(--glass-dark);}
     .sidebar.open { transform: translateX(0); }
-    /* Logo */
     .app-logo { text-align: center; margin-bottom: 10px;}
     .logo-row {
       display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -194,7 +193,6 @@
       user-select: none;
     }
     body.dark .app-tagline { color: var(--accent);}
-    /* Panels */
     .panel {
       background: var(--glass);
       border-radius: var(--radius);
@@ -204,7 +202,6 @@
       transition: background 0.3s;
     }
     body.dark .panel { background: var(--glass-dark);}
-    /* Status */
     .status-list { list-style: none; padding: 0; margin: 0;}
     .status-list li {
       display: flex; align-items: center; gap: 10px;
@@ -228,7 +225,6 @@
       color: white;
       transition: background 0.2s;
     }
-    /* Inputs & Buttons */
     input[type="text"] {
       width: 100%;
       padding: 8px 12px;
@@ -294,7 +290,6 @@
       display: none;
       transition: background 0.3s, color 0.3s;
     }
-    /* Copyright */
     .copyright {
       position: fixed;
       bottom: calc(var(--frame-thickness) + 7px);
@@ -313,7 +308,6 @@
     body.dark .copyright { background: var(--glass-dark); color: #e7eaf1;}
     .copyright a { color: var(--primary); text-decoration: none;}
     .copyright a:hover { color: var(--accent);}
-    /* Responsive */
     @media (max-width: 600px) {
       :root { --sidebar-width: 97vw; }
       .sidebar { padding: 12px 2vw 8px 2vw; }
@@ -322,10 +316,8 @@
     @media (max-width: 400px) {
       .sidebar { padding: 10px 1vw 6px 1vw;}
     }
-    /* Accessibility focus */
     button:focus, input:focus { outline: 2px solid var(--primary);}
     body.dark button:focus, body.dark input:focus { outline: 2px solid var(--secondary);}
-    /* Hide file input */
     #file-input { display: none;}
   </style>
 </head>
@@ -436,7 +428,6 @@
         : '<path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" stroke="#2D9CDB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     }
     darkToggle.addEventListener('click', () => setDarkMode(!document.body.classList.contains('dark')));
-    // Init dark mode from localStorage
     window.addEventListener('DOMContentLoaded', () => {
       setDarkMode(localStorage.getItem('maplens-dark') === '1');
     });
@@ -791,50 +782,4 @@
       if (point.points.length > 0) {
         const p = point.points[0];
         const sphere = document.createElement('a-sphere');
-        sphere.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-        sphere.setAttribute('color', '#6FCF97');
-        sphere.setAttribute('radius', '2.5');
-        sphere.setAttribute('position', '0 0 0');
-        kmlContainer.appendChild(sphere);
-        const text = document.createElement('a-text');
-        text.setAttribute('gps-entity-place', `latitude: ${p.lat}; longitude: ${p.lon}`);
-        text.setAttribute('value', point.name);
-        text.setAttribute('scale', '5 5 5');
-        text.setAttribute('look-at', '[gps-camera]');
-        text.setAttribute('align', 'center');
-        text.setAttribute('color', '#2D9CDB');
-        text.setAttribute('position', '0 8 0');
-        kmlContainer.appendChild(text);
-      }
-    }
-    function geoToMeters(lat1, lon1, lat2, lon2) {
-      const R = 6378137;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      const distance = R * c;
-      const bearing = Math.atan2(
-        Math.sin(dLon) * Math.cos(lat2 * Math.PI / 180),
-        Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
-        Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dLon)
-      );
-      const x = distance * Math.sin(bearing);
-      const z = distance * Math.cos(bearing);
-      return { x, y: 0, z };
-    }
-    function geoDistance(lat1, lon1, lat2, lon2) {
-      const R = 6378137;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-  </script>
-</body>
-</html>
+        sphere.setAttribute('gps-entity-place', `
