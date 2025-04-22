@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <title>MapLens</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <!-- Σωστή έκδοση A-Frame και AR.js για GPS AR -->
   <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.3.2/aframe/build/aframe-ar.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;400&display=swap" rel="stylesheet">
@@ -362,7 +361,7 @@
     </div>
     <div id="error-message" class="error-message" role="alert"></div>
   </div>
-  <a-scene 
+  <a-scene
     vr-mode-ui="enabled: false"
     renderer="logarithmicDepthBuffer: true; precision: medium;"
     embedded
@@ -515,7 +514,7 @@
       statusEl.textContent = translations[currentLanguage].reset;
     });
 
-    // GPS status (ΔΙΟΡΘΩΜΕΝΟ για gps-new-camera)
+    // GPS status (για gps-new-camera)
     document.addEventListener('DOMContentLoaded', () => {
       const camera = document.querySelector('#gps-camera');
       camera.addEventListener('gps-camera-update-position', e => {
