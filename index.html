@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<html lang="el">
 <head>
   <meta charset="utf-8">
   <title>MapLens</title>
@@ -339,356 +338,6 @@
     }
     window.addEventListener('resize', createTickMarks);
     window.addEventListener('DOMContentLoaded', createTickMarks);
-    <meta charset="utf-8">
-    <title>MapLens</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- A-Frame & AR.js -->
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
-    <style>
-        :root {
-            /* Κύρια παλέτα χρωμάτων */
-            --primary: #003A5D;      /* Σκούρο μπλε */
-            --neutral: #ADADAD;      /* Ανοιχτό γκρι */
-            --background: #FFFFFF;   /* Λευκό */
-            --accent: #4FC3F7;       /* Ζωντανό κυανό */
-            --success: #2ECC71;      /* Πράσινο επιτυχίας */
-            --warning: #F1C40F;      /* Κίτρινο προειδοποίησης */
-            --error: #E74C3C;        /* Κόκκινο σφάλματος */
-            
-            /* Παράμετροι διεπαφής */
-            --panel-border: 2px solid var(--primary);
-            --frame-thickness: 30px; /* Πάχος εξωτερικού πλαισίου */
-            --tick-spacing: 40px;    /* Απόσταση μεταξύ γραμμών συντεταγμένων */
-            --sidebar-width: 340px;  /* Πλάτος πλευρικής στήλης */
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            overflow: hidden;
-            font-family: 'Segoe UI', Arial, sans-serif;
-        }
-        
-        /* Εξωτερικό πλαίσιο με γραμμές συντεταγμένων */
-        body::before {
-            content: "";
-            position: fixed;
-            z-index: 9999;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            border: var(--frame-thickness) solid rgba(0, 58, 93, 0.7); /* Ημιδιαφανές πλαίσιο */
-            box-sizing: border-box;
-        }
-        
-        /* Οριζόντιες γραμμές πάνω */
-        .tick-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-top::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to right,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν πάνω */
-        .tick-top .tick-marker {
-            position: absolute;
-            width: 1px;
-            height: 5px;
-            background-color: white;
-            top: var(--frame-thickness);
-        }
-        
-        /* Οριζόντιες γραμμές κάτω */
-        .tick-bottom {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-bottom::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to right,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν κάτω */
-        .tick-bottom .tick-marker {
-            position: absolute;
-            width: 1px;
-            height: 5px;
-            background-color: white;
-            bottom: var(--frame-thickness);
-        }
-        
-        /* Κάθετες γραμμές αριστερά */
-        .tick-left {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-left::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν αριστερά */
-        .tick-left .tick-marker {
-            position: absolute;
-            height: 1px;
-            width: 5px;
-            background-color: white;
-            left: var(--frame-thickness);
-        }
-        
-        /* Κάθετες γραμμές δεξιά */
-        .tick-right {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            width: var(--frame-thickness);
-            z-index: 10000;
-            pointer-events: none;
-        }
-        
-        .tick-right::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            width: var(--frame-thickness);
-            background-image: 
-                repeating-linear-gradient(
-                    to bottom,
-                    transparent,
-                    transparent calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) calc(var(--tick-spacing) - 1px),
-                    rgba(255, 255, 255, 0.8) var(--tick-spacing)
-                );
-        }
-        
-        /* Γραμμές που προεξέχουν δεξιά */
-        .tick-right .tick-marker {
-            position: absolute;
-            height: 1px;
-            width: 5px;
-            background-color: white;
-            right: var(--frame-thickness);
-        }
-        
-        /* Κουμπί εμφάνισης μενού */
-        #menu-toggle {
-            position: fixed;
-            top: calc(var(--frame-thickness) + 10px);
-            left: calc(var(--frame-thickness) + 10px);
-            z-index: 10000;
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            width: 45px;
-            height: 45px;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s ease;
-        }
-        
-        #menu-toggle:hover {
-            background-color: var(--accent);
-        }
-        
-        /* Πλευρική στήλη */
-        #sidebar {
-            position: fixed;
-            top: var(--frame-thickness);
-            left: var(--frame-thickness);
-            bottom: var(--frame-thickness);
-            width: var(--sidebar-width);
-            background-color: rgba(255, 255, 255, 0.95);
-            z-index: 9990;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            padding: 15px;
-            padding-top: 60px;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        #sidebar.open {
-            transform: translateX(0);
-        }
-        
-        .panel {
-            background: var(--background);
-            border: var(--panel-border);
-            padding: 15px;
-        }
-        
-        /* Logo MapLens */
-        .app-logo {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        .logo-text {
-            font-size: 2.2em;
-            font-weight: bold;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        
-        .logo-text::before {
-            content: "MapLens";
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            opacity: 0.1;
-            -webkit-text-fill-color: var(--primary);
-        }
-        
-        .logo-icon {
-            display: inline-block;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        
-        .map-icon {
-            width: 24px;
-            height: 24px;
-            border: 2px solid var(--primary);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        #status {
-            color: var(--primary);
-            font-size: 1em;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        #accuracy {
-            color: var(--primary);
-            background: var(--neutral);
-            padding: 4px 8px;
-            font-size: 1em;
-            margin: 7px auto 0 auto;
-            display: block;
-            width: fit-content;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-        
-        #datetime {
-            color: var(--neutral);
-            text-align: center;
-            margin-top: 7px;
-            font-size: 0.95em;
-            letter-spacing: 0.5px;
-        }
-        
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 13px;
-            font-size: 1em;
-            font-weight: 500;
-            cursor: pointer;
-            margin: 3px 0;
-            transition: background-color 0.2s;
-            display: block;
-            width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .btn:hover {
-            background-color: var(--accent);
-        }
-        
-        #file-input {
-            display: none;
-        }
-        
-        #error-message {
-            color: var(--error);
-            background: rgba(231, 76, 60, 0.1);
-            border: 1.5px solid var(--error);
-            padding: 8px 10px;
-            margin-top: 7px;
-            font-size: 1em;
-            display: none;
-        }
 
     // Sidebar menu
     const menuToggle = document.getElementById('menu-toggle');
@@ -696,14 +345,6 @@
     menuToggle.addEventListener('click', () => {
       sidebar.classList.toggle('open');
     });
-        /* Επιλογέας γλώσσας */
-        #language-selector {
-            position: fixed;
-            top: calc(var(--frame-thickness) + 10px);
-            right: calc(var(--frame-thickness) + 10px);
-            z-index: 10000;
-            display: flex;
-        }
 
     // Language switching
     let currentLanguage = 'el';
@@ -722,15 +363,6 @@
         el.setAttribute('placeholder', el.getAttribute(`data-${lang}-placeholder`));
       });
     }
-        #language-selector button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            margin-left: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
 
     // Date/time
     function updateDateTime() {
@@ -739,9 +371,6 @@
       setTimeout(updateDateTime, 1000);
     }
     updateDateTime();
-        #language-selector button:hover {
-            background-color: var(--accent);
-        }
 
     // Translations
     const translations = {
@@ -784,10 +413,6 @@
         showAR: "Show AR"
       }
     };
-        #language-selector button.active {
-            background-color: var(--accent);
-            font-weight: bold;
-        }
 
     // Status update
     let arVisible = true, currentAccuracy = null, userPosition = null;
@@ -806,16 +431,6 @@
       kmlContainer.innerHTML = '';
       statusEl.textContent = translations[currentLanguage].reset;
     });
-        /* Πληροφορίες δημιουργού */
-        #copyright {
-            position: fixed;
-            bottom: calc(var(--frame-thickness) + 5px);
-            right: calc(var(--frame-thickness) + 10px);
-            font-size: 0.8em;
-            color: var(--neutral);
-            text-align: right;
-            z-index: 10000;
-        }
 
     // GPS status
     document.addEventListener('DOMContentLoaded', () => {
@@ -842,11 +457,6 @@
         }
       });
     });
-        #copyright a {
-            color: var(--primary);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
 
     // KML loading
     const fileInput = document.getElementById('file-input');
@@ -856,9 +466,6 @@
     uploadBtn.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleFileUpload);
     loadUrlBtn.addEventListener('click', handleUrlLoad);
-        #copyright a:hover {
-            color: var(--accent);
-        }
 
     function handleFileUpload(e) {
       const file = e.target.files[0];
@@ -883,15 +490,6 @@
       };
       reader.readAsText(file);
     }
-        /* Input styling */
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border: 1px solid var(--neutral);
-            transition: border-color 0.3s;
-            box-sizing: border-box;
-        }
 
     function handleUrlLoad() {
       const url = urlInput.value.trim();
@@ -922,21 +520,6 @@
           showError(translations[currentLanguage].downloadError + error.message);
         });
     }
-        input[type="text"]:focus {
-            border-color: var(--accent);
-            outline: none;
-        }
-
-        /* Status colors */
-        .status-good {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: var(--primary);
-        }
-
-        .status-medium {
-            background-color: rgba(241, 196, 15, 0.2);
-            color: var(--primary);
-        }
 
     function showError(message) {
       errorMessageEl.textContent = message;
@@ -944,10 +527,6 @@
       setTimeout(() => { errorMessageEl.style.display = 'none'; }, 5000);
       statusEl.textContent = translations[currentLanguage].error;
     }
-        .status-bad {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: var(--primary);
-        }
 
     function parseKML(kmlText) {
       const parser = new DOMParser();
@@ -970,22 +549,7 @@
             const coords = parseCoordinateString(coordsText);
             if (coords.length > 2) {
               polygons.push({type: 'polygon', name, points: coords});
-        .divider {
-            color: var(--neutral);
-            margin: 6px 0;
-            text-align: center;
-            font-size: 0.95em;
-        }
-    </style>
-</head>
-<body>
-    <!-- Τα πλαίσια με τις γραμμές που προεξέχουν -->
-    <div class="tick-top">
-        <!-- Γραμμές που προεξέχουν από πάνω προς τα κάτω -->
-        <script>
-            for (let i = 0; i <= window.innerWidth; i += 40) {
-                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
-}
+            }
           }
         }
         // Γραμμές
@@ -998,15 +562,7 @@
             const coords = parseCoordinateString(coordsText);
             if (coords.length > 1) {
               polygons.push({type: 'line', name, points: coords});
-        </script>
-    </div>
-    
-    <div class="tick-bottom">
-        <!-- Γραμμές που προεξέχουν από κάτω προς τα πάνω -->
-        <script>
-            for (let i = 0; i <= window.innerWidth; i += 40) {
-                document.write(`<div class="tick-marker" style="left: ${i}px"></div>`);
-}
+            }
           }
         }
         // Σημεία
@@ -1019,24 +575,7 @@
             const coords = parseCoordinateString(coordsText);
             if (coords.length > 0) {
               polygons.push({type: 'point', name, points: coords});
-        </script>
-    </div>
-    
-    <div class="tick-left">
-        <!-- Γραμμές που προεξέχουν από αριστερά προς τα δεξιά -->
-        <script>
-            for (let i = 0; i <= window.innerHeight; i += 40) {
-                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
             }
-        </script>
-    </div>
-    
-    <div class="tick-right">
-        <!-- Γραμμές που προεξέχουν από δεξιά προς τα αριστερά -->
-        <script>
-            for (let i = 0; i <= window.innerHeight; i += 40) {
-                document.write(`<div class="tick-marker" style="top: ${i}px"></div>`);
-}
           }
         }
       }
@@ -1201,100 +740,3 @@
   </script>
 </body>
 </html>
-        </script>
-    </div>
-    
-    <!-- Κουμπί εμφάνισης μενού -->
-    <button id="menu-toggle">☰</button>
-    
-    <!-- Επιλογέας γλώσσας -->
-    <div id="language-selector">
-        <button id="lang-el" class="active">EL</button>
-        <button id="lang-en">EN</button>
-    </div>
-
-    <!-- Πληροφορίες δημιουργού -->
-    <div id="copyright">
-        © 2025 Thomas G. Lagkas | <a href="mailto:Thomas.lagkas@outlook.com">Thomas.lagkas@outlook.com</a>
-    </div>
-    
-    <!-- Πλευρική στήλη με όλα τα πλαίσια -->
-    <div id="sidebar">
-        <div class="panel">
-            <div class="app-logo">
-                <span class="logo-icon">
-                    <div class="map-icon">M</div>
-                </span>
-                <span class="logo-text">MapLens</span>
-            </div>
-            <div id="status">⌛ Αναμονή GPS...</div>
-            <span id="accuracy">Ακρίβεια GPS: Αναμονή...</span>
-            <div id="datetime"></div>
-        </div>
-        
-        <div class="panel">
-            <input type="file" id="file-input" accept=".kml">
-            <button id="upload-btn" class="btn" data-el="Φόρτωση KML" data-en="Load KML">Φόρτωση KML</button>
-            <div class="divider" data-el="ή" data-en="or">ή</div>
-            <input type="text" id="url-input" placeholder="URL του KML αρχείου" data-el-placeholder="URL του KML αρχείου" data-en-placeholder="KML file URL">
-            <button id="load-url-btn" class="btn" data-el="Φόρτωση από URL" data-en="Load from URL">Φόρτωση από URL</button>
-        </div>
-        
-        <div class="panel">
-            <button id="toggle-btn" class="btn" data-el="Εμφάνιση/Απόκρυψη AR" data-en="Show/Hide AR">Εμφάνιση/Απόκρυψη AR</button>
-            <button id="reset-btn" class="btn" data-el="Επαναφορά" data-en="Reset">Επαναφορά</button>
-        </div>
-        
-        <div id="error-message" class="panel"></div>
-    </div>
-
-    <!-- A-Frame Scene -->
-    <a-scene 
-        vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 960;"
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
-        embedded>
-        <a-camera gps-camera rotation-reader></a-camera>
-        <a-entity id="kml-container"></a-entity>
-    </a-scene>
-
-    <script>
-        // Global variables
-        let arVisible = true;
-        let currentAccuracy = null;
-        let userPosition = null;
-        let currentLanguage = 'el';
-        
-        // DOM Elements
-        const menuToggle = document.getElementById('menu-toggle');
-        const sidebar = document.getElementById('sidebar');
-        const fileInput = document.getElementById('file-input');
-        const uploadBtn = document.getElementById('upload-btn');
-        const urlInput = document.getElementById('url-input');
-        const loadUrlBtn = document.getElementById('load-url-btn');
-        const toggleBtn = document.getElementById('toggle-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const statusEl = document.getElementById('status');
-        const accuracyEl = document.getElementById('accuracy');
-        const datetimeEl = document.getElementById('datetime');
-        const errorMessageEl = document.getElementById('error-message');
-        const kmlContainer = document.getElementById('kml-container');
-        const langEl = document.getElementById('lang-el');
-        const langEn = document.getElementById('lang-en');
-
-        // Προσαρμογή των γραμμών βάσει του μεγέθους του παραθύρου
-        window.addEventListener('resize', updateTickMarkers);
-
-        function updateTickMarkers() {
-            const tickTop = document.querySelector('.tick-top');
-            const tickBottom = document.querySelector('.tick-bottom');
-            const tickLeft = document.querySelector('.tick-left');
-            const tickRight = document.querySelector('.tick-right');
-            
-            // Καθαρισμός προηγούμενων δεικτών
-            tickTop.innerHTML = '';
-            tickBottom.innerHTML = '';
-            tickLeft.innerHTML = '';
-            tickRight.innerHTML = '';
-            
-            // Προσθήκη νέων δεικτών βάσει
