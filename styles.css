@@ -160,6 +160,7 @@ body {
   transform: translate(-50%, -50%);
   display: flex;
   gap: 12px;
+  z-index: 2000;
 }
 
 .loading-dot {
@@ -193,42 +194,25 @@ body {
   z-index: 0;
 }
 
-/* Τρισδιάστατα αντικείμενα AR */
-.ar-entity {
-  transition: opacity 0.3s ease;
+/* Start AR Button */
+.start-button {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    padding: 20px 40px;
+    font-size: 1.2rem;
 }
 
-.ar-entity:hover {
-  opacity: 0.8;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .file-input-container {
-    top: 70px;
-  }
-  
-  .control-panel {
-    bottom: 15px;
-  }
-  
-  .neo-button {
-    padding: 10px 16px;
-    font-size: 0.8rem;
-  }
-  
-  .app-title {
-    font-size: 1rem;
-  }
-}
-
-/* iOS Safari fixes */
-@supports (-webkit-touch-callout: none) {
-  .status-container {
-    top: 90px;
-  }
-  
-  .file-input-container {
-    top: 90px;
-  }
+/* Βελτιστοποίηση εμφάνισης video για AR.js */
+a-scene video {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: cover !important;
+    z-index: -1 !important;
+    background: #000;
 }
