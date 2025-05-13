@@ -1,18 +1,18 @@
 class ARManager {
     constructor() {
-        this.scene = document.querySelector('a-scene');
-        this.container = document.getElementById('ar-container');
+        this.scene = document.querySelector('#ar-scene');
+        this.container = document.querySelector('#ar-content');
         this.initEventListeners();
         this.initAREnvironment();
         this.features = [];
     }
 
     initEventListeners() {
-        // File input
+        // File input handling
         document.getElementById('file-input').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-            
+
             document.getElementById('loading').style.display = 'flex';
             try {
                 for (const file of files) {
@@ -32,7 +32,7 @@ class ARManager {
             this.features = [];
         });
 
-        // Scene click handler
+        // Click handling
         this.scene.addEventListener('click', (e) => {
             const entity = e.detail.intersection?.el;
             if (entity?.classList.contains('ar-element')) {
@@ -45,17 +45,19 @@ class ARManager {
     initAREnvironment() {
         // Configure scene environment
         this.scene.setAttribute('environment', {
-            preset: 'default',
-            seed: 1234,
+            preset: 'starry',
+            seed: 42,
             lighting: 'distant',
-            shadow: true
+            shadow: true,
+            shadowType: 'pcfsoft'
         });
 
-        // Add ambient light
-        const ambientLight = document.createElement('a-light');
-        ambientLight.setAttribute('type', 'ambient');
-        ambientLight.setAttribute('intensity', '0.5');
-        this.scene.appendChild(ambientLight);
+        // Add directional light
+        const light = document.createElement('a-light');
+        light.setAttribute('type', 'directional');
+        light.setAttribute('intensity', '0.8');
+        light.setAttribute('position', '1 2 3');
+        this.scene.appendChild(light);
     }
 
     createAREntities(features) {
@@ -91,21 +93,21 @@ class ARManager {
 
         entity.setAttribute('geometry', {
             primitive: 'plane',
-            width: 10,
-            height: 10
+            width: 15,
+            height: 15
         });
 
         entity.setAttribute('material', {
             color: '#6366f1',
             opacity: 0.4,
             transparent: true,
-            metalness: 0.7,
-            roughness: 0.3
+            metalness: 0.8,
+            roughness: 0.2
         });
 
         entity.setAttribute('animation', {
             property: 'material.opacity',
-            to: 0.7,
+            to: 0.8,
             dir: 'alternate',
             loop: true,
             dur: 2000
@@ -125,7 +127,7 @@ class ARManager {
             </div>`;
         }
 
-        showInfo(feature.properties.name || 'Άγνωστο Στοιχείο', content);
+        showInfo(feature.properties.name, content);
     }
 
     calculateCenter(coords) {
