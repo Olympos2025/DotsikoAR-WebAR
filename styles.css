@@ -1,77 +1,171 @@
 :root {
-    --primary: #2196F3;
-    --secondary: #FF4081;
-    --background: rgba(255,255,255,0.9);
+    --primary: #6366f1;
+    --secondary: #10b981;
+    --accent: #8b5cf6;
+    --background: rgba(17, 24, 39, 0.98);
+    --glass: rgba(255, 255, 255, 0.1);
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
     margin: 0;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Inter', sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    overflow: hidden;
 }
 
-/* Controls */
-.controls {
+/* Holographic Loader */
+.holographic-loader {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: conic-gradient(var(--primary), var(--secondary), var(--accent));
+    animation: spin 1.5s linear infinite;
+    position: relative;
+}
+
+.holographic-loader::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: var(--background);
+    border-radius: 50%;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Glassmorphic UI */
+.ui-container {
     position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
     display: flex;
-    gap: 10px;
-    z-index: 1000;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    background: var(--primary);
-    color: white;
+.glass-button {
+    padding: 0.75rem 1.5rem;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    color: var(--text-primary);
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
 }
 
-#file-input {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
+.glass-button:hover {
+    background: rgba(99, 102, 241, 0.2);
+    transform: translateY(-2px);
 }
 
-/* Info Panel */
+/* Neon Controls */
+.neon-button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--glass);
+    color: var(--primary);
+    cursor: pointer;
+    transition: var(--transition);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 0 8px var(--primary);
+}
+
+.neon-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--primary);
+}
+
+/* Holographic Info Panel */
 .info-panel {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: var(--background);
-    padding: 15px;
-    border-radius: 10px;
-    max-width: 300px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    display: none;
-    z-index: 10000;
+    top: 1rem;
+    right: -100%;
+    width: 320px;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: var(--transition);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-.info-panel h3 {
-    margin: 0 0 10px 0;
-    color: #333;
+.info-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(45deg, var(--primary), transparent);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
 }
 
-.info-panel button {
-    margin-top: 10px;
-    padding: 8px 15px;
-    background: var(--secondary);
-    color: white;
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.info-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
     border: none;
-    border-radius: 5px;
+    color: var(--text-primary);
+    font-size: 1.5rem;
     cursor: pointer;
+    padding: 0.25rem;
+}
+
+.info-content {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
 }
 
 /* AR Elements */
 .ar-element {
+    transition: transform 0.3s ease, opacity 0.3s ease;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
 }
 
 .ar-element:hover {
     transform: scale(1.05);
+    filter: brightness(1.2);
 }
