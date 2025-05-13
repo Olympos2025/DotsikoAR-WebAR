@@ -2,23 +2,30 @@ class KMLParser {
     static async parse(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 try {
                     const parser = new DOMParser();
                     const kmlDoc = parser.parseFromString(e.target.result, 'text/xml');
-                    const geoJson = window.toGeoJSON.kml(kmlDoc);
                     
-                    // Extract extended properties
+                    // Check for parser errors
+                    if (kmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('Μη έγκυρο KML αρχείο');
+                    }
+
+                    // Convert KML to GeoJSON
+                    const geoJson = window.toGeoJSON.kml(kmlDoc);
+
+                    // Enrich features with additional data
                     geoJson.features = Array.from(kmlDoc.getElementsByTagName('Placemark')).map((placemark, index) => {
                         const feature = geoJson.features[index];
-                        feature.properties = this.extractPlacemarkData(placemark);
+                        feature.properties = this.extractProperties(placemark);
                         feature.id = `feature-${Date.now()}-${index}`;
                         return feature;
                     });
 
                     resolve(geoJson);
                 } catch (error) {
-                    reject(new Error('Λάθος μορφή KML αρχείου'));
+                    reject(new Error('Σφάλμα ανάλυσης KML: ' + error.message));
                 }
             };
             reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης αρχείου'));
@@ -26,17 +33,14 @@ class KMLParser {
         });
     }
 
-    static extractPlacemarkData(placemark) {
+    static extractProperties(placemark) {
         const props = {};
-        // Extract name
-        const nameElement = placemark.getElementsByTagName('name')[0];
-        if (nameElement) props.name = nameElement.textContent;
         
-        // Extract description
-        const descElement = placemark.getElementsByTagName('description')[0];
-        if (descElement) props.description = descElement.textContent;
+        // Extract basic properties
+        props.name = placemark.getElementsByTagName('name')[0]?.textContent || 'Χωρίς όνομα';
+        props.description = placemark.getElementsByTagName('description')[0]?.textContent || 'Δεν υπάρχει περιγραφή';
 
-        // Extract custom data
+        // Extract ExtendedData
         const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
         if (extendedData) {
             Array.from(extendedData.getElementsByTagName('Data')).forEach(dataElement => {
