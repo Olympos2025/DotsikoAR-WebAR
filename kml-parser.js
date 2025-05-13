@@ -2,44 +2,50 @@ class KMLParser {
     static async parse(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onload = async (e) => {
+            reader.onload = (e) => {
                 try {
                     const parser = new DOMParser();
                     const kmlDoc = parser.parseFromString(e.target.result, 'text/xml');
                     const geoJson = window.toGeoJSON.kml(kmlDoc);
                     
-                    // Εξαγωγή properties
-                    geoJson.features = geoJson.features.map((feature, index) => {
-                        const placemark = kmlDoc.getElementsByTagName('Placemark')[index];
-                        return {
-                            ...feature,
-                            properties: this.extractProperties(placemark)
-                        };
+                    // Extract extended properties
+                    geoJson.features = Array.from(kmlDoc.getElementsByTagName('Placemark')).map((placemark, index) => {
+                        const feature = geoJson.features[index];
+                        feature.properties = this.extractPlacemarkData(placemark);
+                        feature.id = `feature-${Date.now()}-${index}`;
+                        return feature;
                     });
 
                     resolve(geoJson);
                 } catch (error) {
-                    reject(error);
+                    reject(new Error('Λάθος μορφή KML αρχείου'));
                 }
             };
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης αρχείου'));
             reader.readAsText(file);
         });
     }
 
-    static extractProperties(placemark) {
-        const properties = {};
-        // Εξαγωγή όνοματος
-        const name = placemark.getElementsByTagName('name')[0];
-        if (name) properties.name = name.textContent;
+    static extractPlacemarkData(placemark) {
+        const props = {};
+        // Extract name
+        const nameElement = placemark.getElementsByTagName('name')[0];
+        if (nameElement) props.name = nameElement.textContent;
         
-        // Εξαγωγή περιγραφής
-        const description = placemark.getElementsByTagName('description')[0];
-        if (description) properties.description = description.textContent;
+        // Extract description
+        const descElement = placemark.getElementsByTagName('description')[0];
+        if (descElement) props.description = descElement.textContent;
 
-        // Προσθήκη μοναδικού ID
-        properties.id = `feature-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        return properties;
+        // Extract custom data
+        const extendedData = placemark.getElementsByTagName('ExtendedData')[0];
+        if (extendedData) {
+            Array.from(extendedData.getElementsByTagName('Data')).forEach(dataElement => {
+                const key = dataElement.getAttribute('name');
+                const value = dataElement.getElementsByTagName('value')[0]?.textContent;
+                if (key && value) props[key] = value;
+            });
+        }
+
+        return props;
     }
 }
