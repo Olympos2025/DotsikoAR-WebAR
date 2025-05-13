@@ -1,138 +1,58 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="author" content="Thomas G. Lagkas">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MapLens - WebAR KML Viewer</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- CDN βιβλιοθήκες -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@2.1.0/dist/toGeoJSON.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Glassmorphism Header -->
-    <header class="app-header">
-        <h1 class="app-title">MapLens</h1>
-    </header>
-    
-    <!-- File Input με μοντέρνο στυλ -->
-    <div class="file-input-container">
-        <label for="file-input" class="file-input-label">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            Επιλογή KML Αρχείων
-        </label>
-        <input type="file" id="file-input" accept=".kml" multiple>
-    </div>
-    
-    <!-- Status Indicators -->
-    <div class="status-container">
-        <div class="status-pill">
-            <span class="status-indicator" id="camera-indicator"></span>
-            <span id="camera-status">Κάμερα: Ανενεργή</span>
-        </div>
-        <div class="status-pill">
-            <span class="status-indicator" id="gps-indicator"></span>
-            <span id="gps-status">GPS: Ανενεργό</span>
-        </div>
-    </div>
-    
-    <!-- Neumorphic Control Panel -->
-    <div class="control-panel">
-        <button id="clear-button" class="neo-button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-            Καθαρισμός
-        </button>
-        <button id="refresh-button" class="neo-button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6"></path>
-                <path d="M1 20v-6h6"></path>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            Ανανέωση
-        </button>
-    </div>
-    
-    <!-- Loading Animation -->
-    <div class="loading-container" id="loading">
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
+    <!-- Πληροφορίες στοιχείου -->
+    <div id="info-panel" class="info-panel">
+        <h3 id="info-title"></h3>
+        <div id="info-content"></div>
+        <button onclick="hideInfo()">Κλείσιμο</button>
     </div>
 
-    <!-- Κουμπί εκκίνησης AR για συμβατότητα με iOS/Safari -->
-    <button id="start-ar" class="neo-button start-button">
-        🚀 Έναρξη AR
-    </button>
-    
-    <!-- AR Scene -->
-    <div id="ar-view" style="display:none;">
-        <a-scene
-            embedded
-            vr-mode-ui="enabled: false"
-            arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
-            renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
-            
-            <!-- Κάμερα με location-based tracking -->
-            <a-camera
-                gps-new-camera="gpsMinDistance: 20; gpsMaxDistance: 20000; positionMinAccuracy: 1000"
-                gps-camera-debug
-                rotation-reader
-                look-controls="enabled: true; reverseMouseDrag: true;"
-                cursor="rayOrigin: mouse;"
-                wasd-controls="enabled: false">
-            </a-camera>
-            
-            <!-- AR content container -->
-            <a-entity id="ar-container"></a-entity>
-        </a-scene>
+    <!-- Controls -->
+    <input type="file" id="file-input" accept=".kml" multiple>
+    <div class="controls">
+        <button id="clear-btn" class="btn">Καθαρισμός</button>
+        <button id="refresh-btn" class="btn">Ανανέωση</button>
     </div>
-    
+
+    <!-- AR Scene -->
+    <a-scene 
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false"
+        renderer="logarithmicDepthBuffer: true;"
+        id="scene">
+        
+        <a-camera gps-new-camera="minDistance: 20; maxDistance: 20000;"></a-camera>
+        <a-entity id="ar-container"></a-entity>
+    </a-scene>
+
     <script src="kml-parser.js"></script>
     <script src="ar-manager.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Κουμπί εκκίνησης AR
-            const startButton = document.getElementById('start-ar');
-            const arView = document.getElementById('ar-view');
-            // Εμφάνιση μόνο όταν πατηθεί το κουμπί
-            startButton.addEventListener('click', async () => {
-                arView.style.display = 'block';
-                startButton.style.display = 'none';
+        // Global μεταβλητές
+        let currentFeatures = [];
 
-                // Ενημέρωση κατάστασης κάμερας
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    try {
-                        await navigator.mediaDevices.getUserMedia({ 
-                            video: { facingMode: { ideal: "environment" } }
-                        });
-                        document.getElementById('camera-status').textContent = 'Κάμερα: Ενεργή';
-                        document.getElementById('camera-indicator').classList.add('active');
-                    } catch (error) {
-                        alert("Παρακαλώ επιτρέψτε την πρόσβαση στην κάμερα για να λειτουργήσει η εφαρμογή AR");
-                    }
-                }
-            });
+        // Συναρτήσεις πληροφοριών
+        function showInfo(title, content) {
+            const panel = document.getElementById('info-panel');
+            panel.style.display = 'block';
+            document.getElementById('info-title').textContent = title;
+            document.getElementById('info-content').innerHTML = content;
+        }
 
-            // Κουμπί ανανέωσης
-            document.getElementById('refresh-button').addEventListener('click', () => {
-                location.reload();
-            });
-        });
+        function hideInfo() {
+            document.getElementById('info-panel').style.display = 'none';
+        }
     </script>
 </body>
 </html>
