@@ -2,87 +2,90 @@ class ARManager {
     constructor() {
         this.scene = document.querySelector('#ar-scene');
         this.container = document.querySelector('#ar-content');
+        this.loader = document.querySelector('#loading');
         this.initEventListeners();
         this.initAREnvironment();
-        this.features = [];
     }
 
     initEventListeners() {
-        // File input handling
-        document.getElementById('file-input').addEventListener('change', async (e) => {
+        // KML File Input
+        document.getElementById('kml-input').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-
-            document.getElementById('loading').style.display = 'flex';
+            
+            this.loader.style.display = 'flex';
             try {
                 for (const file of files) {
-                    const geoJson = await KMLParser.parse(file);
+                    const geoJson = await this.parseKML(file);
                     this.createAREntities(geoJson.features);
-                    this.features.push(...geoJson.features);
                 }
             } catch (error) {
-                alert(error.message);
+                this.showError(`Σφάλμα: ${error.message}`);
             }
-            document.getElementById('loading').style.display = 'none';
+            this.loader.style.display = 'none';
         });
 
-        // Clear button
+        // Clear Button
         document.getElementById('clear-btn').addEventListener('click', () => {
             this.container.innerHTML = '';
-            this.features = [];
-        });
-
-        // Click handling
-        this.scene.addEventListener('click', (e) => {
-            const entity = e.detail.intersection?.el;
-            if (entity?.classList.contains('ar-element')) {
-                const feature = this.features.find(f => f.id === entity.dataset.featureId);
-                if (feature) this.showFeatureInfo(feature);
-            }
         });
     }
 
-    initAREnvironment() {
-        // Configure scene environment
-        this.scene.setAttribute('environment', {
-            preset: 'starry',
-            seed: 42,
-            lighting: 'distant',
-            shadow: true,
-            shadowType: 'pcfsoft'
+    async parseKML(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const kmlDoc = new DOMParser().parseFromString(e.target.result, 'text/xml');
+                    const geoJson = toGeoJSON.kml(kmlDoc);
+                    
+                    // Validate GeoJSON
+                    if (!geoJson || !geoJson.features) {
+                        throw new Error('Μη έγκυρο KML αρχείο');
+                    }
+                    
+                    resolve(geoJson);
+                } catch (error) {
+                    reject(new Error('Λάθος μορφή αρχείου'));
+                }
+            };
+            reader.onerror = () => reject(new Error('Αδυναμία ανάγνωσης αρχείου'));
+            reader.readAsText(file);
         });
-
-        // Add directional light
-        const light = document.createElement('a-light');
-        light.setAttribute('type', 'directional');
-        light.setAttribute('intensity', '0.8');
-        light.setAttribute('position', '1 2 3');
-        this.scene.appendChild(light);
     }
 
     createAREntities(features) {
         features.forEach(feature => {
             const entity = document.createElement('a-entity');
             entity.classList.add('ar-element');
-            entity.setAttribute('data-feature-id', feature.id);
             
+            // Material properties
+            const material = {
+                color: this.getColorForType(feature.geometry.type),
+                opacity: 0.8,
+                transparent: true,
+                metalness: 0.7,
+                roughness: 0.3
+            };
+
             switch(feature.geometry.type) {
                 case 'Polygon':
-                    this.createPolygon(entity, feature);
+                    this.createPolygon(entity, feature, material);
                     break;
                 case 'LineString':
-                    this.createLine(entity, feature);
+                    this.createLine(entity, feature, material);
                     break;
                 case 'Point':
-                    this.createPoint(entity, feature);
+                    this.createPoint(entity, feature, material);
                     break;
             }
 
+            entity.addEventListener('click', () => this.showFeatureInfo(feature));
             this.container.appendChild(entity);
         });
     }
 
-    createPolygon(entity, feature) {
+    createPolygon(entity, feature, material) {
         const coords = feature.geometry.coordinates[0];
         const center = this.calculateCenter(coords);
         
@@ -93,41 +96,38 @@ class ARManager {
 
         entity.setAttribute('geometry', {
             primitive: 'plane',
-            width: 15,
-            height: 15
+            width: 10,
+            height: 10
         });
 
-        entity.setAttribute('material', {
-            color: '#6366f1',
-            opacity: 0.4,
-            transparent: true,
-            metalness: 0.8,
-            roughness: 0.2
-        });
-
-        entity.setAttribute('animation', {
-            property: 'material.opacity',
-            to: 0.8,
-            dir: 'alternate',
-            loop: true,
-            dur: 2000
-        });
+        entity.setAttribute('material', material);
     }
 
     showFeatureInfo(feature) {
-        let content = `<div class="info-item">
-            <span>Τύπος</span>
-            <span>${feature.geometry.type}</span>
-        </div>`;
-
+        const panel = document.querySelector('.info-panel');
+        const title = feature.properties.name || 'Μη ονομασμένο στοιχείο';
+        let content = '';
+        
         for (const [key, value] of Object.entries(feature.properties)) {
-            content += `<div class="info-item">
-                <span>${key}</span>
-                <span>${value || 'N/A'}</span>
-            </div>`;
+            content += `
+                <div class="info-item">
+                    <span>${key}</span>
+                    <span>${value || 'N/A'}</span>
+                </div>
+            `;
         }
 
-        showInfo(feature.properties.name, content);
+        document.getElementById('feature-title').textContent = title;
+        document.getElementById('feature-properties').innerHTML = content;
+        panel.classList.add('active');
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 3000);
     }
 
     calculateCenter(coords) {
@@ -138,4 +138,21 @@ class ARManager {
             lat: (Math.min(...lats) + Math.max(...lats)) / 2
         };
     }
+
+    getColorForType(type) {
+        const colors = {
+            Polygon: '#6366f1',
+            LineString: '#10b981',
+            Point: '#f59e0b'
+        };
+        return colors[type] || '#ffffff';
+    }
+}
+
+// Initialize AR Manager
+const arManager = new ARManager();
+
+// Helper functions
+function hideInfo() {
+    document.querySelector('.info-panel').classList.remove('active');
 }
