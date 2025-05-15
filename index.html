@@ -1,119 +1,44 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <meta name="author" content="Thomas G. Lagkas, Thessaloniki, Greece, thomas.lagkas@outlook.com, +302310851259">
-    <title>MapLens - WebAR KML Viewer</title>
-    <!-- Βασικές βιβλιοθήκες -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@2.1.0/dist/toGeoJSON.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>MapLens WebAR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <!-- Φορτώνουμε βιβλιοθήκες AR και A-Frame -->
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <!-- Οι δικές μας ρουτίνες διαχείρισης AR και KML -->
+  <script src="ar-manager.js"></script>
+  <script src="kml-parser.js"></script>
+  <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <!-- Κεφαλίδα εφαρμογής -->
-    <header class="app-header">
-        <h1 class="app-title">MapLens</h1>
-    </header>
+  <!-- Επικεφαλίδα της εφαρμογής -->
+  <header>MapLens</header>
 
-    <!-- Επιλογή αρχείων KML με σύγχρονο styling -->
-    <div class="file-input-container">
-        <label for="file-input" class="file-input-label">
-            Επιλογή KML Αρχείων
-        </label>
-        <input type="file" id="file-input" accept=".kml" multiple hidden>
-    </div>
+  <!-- Κουμπί επιλογής αρχείου KML -->
+  <label for="kmlFileInput" class="btn btn-top">Επιλογή KML Αρχείων</label>
+  <input type="file" id="kmlFileInput" accept=".kml" style="display:none;" />
 
-    <!-- Πίνακας ελέγχου (κουμπιά) -->
-    <div class="control-panel">
-        <button id="clear-button" class="neo-button">
-            Καθαρισμός
-        </button>
-        <button id="refresh-button" class="neo-button">
-            Ανανέωση
-        </button>
-        <button id="streetview-button" class="neo-button">
-            Street View
-        </button>
-    </div>
+  <!-- Κουμπιά ελέγχου στο κάτω μέρος -->
+  <div id="bottomControls">
+    <button id="clearBtn" class="btn">Καθαρισμός</button>
+    <button id="refreshBtn" class="btn">Ανανέωση</button>
+    <button id="streetBtn" class="btn">Street View</button>
+    <span id="accuracyText">Ακρίβεια: <span id="accuracyValue">--</span> μ</span>
+  </div>
 
-    <!-- Overlay Street View εικόνα (αρχικά κρυφή) -->
-    <div id="streetview-overlay">
-        <img id="streetview-image" src="" alt="Street View Overlay">
-    </div>
+  <!-- Εικόνα overlay για το Street View (αρχικά κρυφή) -->
+  <div id="streetOverlayContainer" style="display:none;">
+    <img id="streetOverlay" alt="Street View">
+  </div>
 
-    <!-- Slider ρύθμισης διαφάνειας overlay -->
-    <input type="range" id="overlay-slider" class="slider" min="0" max="100" value="50">
-
-    <!-- Ένδειξη ακρίβειας GPS -->
-    <div id="gps-accuracy">Ακρίβεια: - μ</div>
-
-    <!-- Κύρια σκηνή AR -->
-    <a-scene vr-mode-ui="enabled: false"
-             arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
-             renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
-        <!-- Κάμερα με location-based tracking -->
-        <a-camera gps-new-camera gps-min-distance="20" gps-max-distance="20000" gps-heading-tolerance="10" gps-altitude-enabled="true"></a-camera>
-        <!-- Container για τα AR στοιχεία -->
-        <a-entity id="ar-container"></a-entity>
-    </a-scene>
-
-    <!-- Φόρτωση (loading) animation -->
-    <div class="loading-container" id="loading">
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-    </div>
-
-    <!-- Scripts εφαρμογής -->
-    <script src="kml-parser.js"></script>
-    <script src="ar-manager.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const gpsOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 };
-            // Ζητάμε άδεια κάμερας μόλις φορτώσει η σελίδα
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
-                    .then(stream => {
-                        console.log("Camera access granted");
-                        // Κλείσιμο stream κάμερας (θα επανανοίξει μέσω AR.js)
-                        stream.getTracks().forEach(track => track.stop());
-                        // Αρχικοποίηση AR Manager μετά την άδεια κάμερας
-                        arManager.init();
-                    })
-                    .catch(error => {
-                        console.error("Camera access denied:", error);
-                        alert("Παρακαλώ επιτρέψτε πρόσβαση στην κάμερα για να λειτουργήσει η εφαρμογή.");
-                    });
-            } else {
-                alert("Ο περιηγητής σας δεν υποστηρίζει κάμερα.");
-            }
-            // Παρακολούθηση τοποθεσίας GPS για ενημέρωση ακρίβειας
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(position => {
-                    // Ενημέρωση ενδείξεων ακρίβειας
-                    const acc = position.coords.accuracy || 0;
-                    document.getElementById('gps-accuracy').textContent = `Ακρίβεια: ${acc.toFixed(0)} μ`;
-                    // Απόκρυψη loading όταν ληφθεί πρώτη τοποθεσία
-                    document.getElementById('loading').style.display = 'none';
-                    // Αποθήκευση θέσης στον AR Manager (fallback)
-                    if (arManager) {
-                        arManager.userPosition = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            altitude: position.coords.altitude || 0
-                        };
-                    }
-                }, error => {
-                    console.error("GPS error:", error);
-                }, gpsOptions);
-            } else {
-                alert("Ο περιηγητής σας δεν υποστηρίζει GPS.");
-            }
-        });
-    </script>
+  <!-- Σκηνή AR -->
+  <a-scene embedded arjs="sourceType: webcam; gpsMinDistance: 5; debugUIEnabled: false;">
+    <a-camera gps-new-camera></a-camera>
+  </a-scene>
 </body>
 </html>
