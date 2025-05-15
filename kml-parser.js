@@ -1,37 +1,72 @@
-// kml-parser.js: Ανάλυση KML και δημιουργία οντοτήτων AR στο A-Frame
-
-function parseKML(kmlText) {
-  try {
-    // Μετατροπή κειμένου KML σε XML DOM
+function parseKML(text) {
+    // Remove namespace to simplify querying
+    text = text.replace(/xmlns="[^"]*"/g, '');
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(kmlText, "text/xml");
-    // Εύρεση στοιχείων coordinates
-    const coordsNodes = xmlDoc.getElementsByTagName("coordinates");
-    if (coordsNodes.length === 0) {
-      throw new Error("Δεν βρέθηκαν συντεταγμένες στο αρχείο KML");
+    const xmlDoc = parser.parseFromString(text, 'text/xml');
+    const data = { points: [], lines: [], polygons: [] };
+    const placemarks = xmlDoc.getElementsByTagName('Placemark');
+    for (let i = 0; i < placemarks.length; i++) {
+        const pm = placemarks[i];
+        const pointEl = pm.getElementsByTagName('Point')[0];
+        const lineEl = pm.getElementsByTagName('LineString')[0];
+        const polyEl = pm.getElementsByTagName('Polygon')[0];
+        if (pointEl) {
+            const coordsText = pointEl.getElementsByTagName('coordinates')[0].textContent.trim();
+            if (coordsText) {
+                // KML coordinates format: lon,lat,alt
+                const parts = coordsText.split(/\s+/);
+                // Usually only one coordinate for a point
+                const coord = parts[0].split(',');
+                const lon = parseFloat(coord[0]) || 0;
+                const lat = parseFloat(coord[1]) || 0;
+                // alt could be coord[2], but we ignore altitude (ground level)
+                data.points.push({ latitude: lat, longitude: lon });
+            }
+        } else if (lineEl) {
+            const coordsText = lineEl.getElementsByTagName('coordinates')[0].textContent.trim();
+            if (coordsText) {
+                const parts = coordsText.split(/\s+/);
+                const coordsArr = [];
+                for (let j = 0; j < parts.length; j++) {
+                    if (!parts[j]) continue;
+                    const vals = parts[j].split(',');
+                    if (vals.length < 2) continue;
+                    const lon = parseFloat(vals[0]) || 0;
+                    const lat = parseFloat(vals[1]) || 0;
+                    coordsArr.push({ latitude: lat, longitude: lon });
+                }
+                if (coordsArr.length > 0) {
+                    data.lines.push(coordsArr);
+                }
+            }
+        } else if (polyEl) {
+            // Only using outer boundary for polygon
+            const coordsText = polyEl.getElementsByTagName('coordinates')[0].textContent.trim();
+            if (coordsText) {
+                const parts = coordsText.split(/\s+/);
+                let coordsArr = [];
+                for (let j = 0; j < parts.length; j++) {
+                    if (!parts[j]) continue;
+                    const vals = parts[j].split(',');
+                    if (vals.length < 2) continue;
+                    const lon = parseFloat(vals[0]) || 0;
+                    const lat = parseFloat(vals[1]) || 0;
+                    coordsArr.push({ latitude: lat, longitude: lon });
+                }
+                // Remove duplicate last point if same as first
+                if (coordsArr.length > 1) {
+                    const first = coordsArr[0];
+                    const last = coordsArr[coordsArr.length - 1];
+                    if (Math.abs(first.latitude - last.latitude) < 1e-9 &&
+                        Math.abs(first.longitude - last.longitude) < 1e-9) {
+                        coordsArr.pop();
+                    }
+                }
+                if (coordsArr.length > 0) {
+                    data.polygons.push(coordsArr);
+                }
+            }
+        }
     }
-    // Λήψη του κειμένου συντεταγμένων και διαχωρισμός σε ζεύγη
-    const coordsText = coordsNodes[0].textContent.trim();
-    const coordsArray = coordsText.split(/\s+/);
-    // Δημιουργία οντότητας AR για κάθε συντεταγμένη
-    coordsArray.forEach(coord => {
-      const parts = coord.split(',');
-      const lon = parseFloat(parts[0]);
-      const lat = parseFloat(parts[1]);
-      addMarker(lat, lon);
-    });
-  } catch (e) {
-    alert("Σφάλμα κατά την επεξεργασία του αρχείου KML");
-    console.error("KML Parsing error:", e);
-  }
-}
-
-// Δημιουργεί μια σφαίρα στο AR στη δοθείσα γεωγραφική θέση
-function addMarker(lat, lon) {
-  const scene = document.querySelector('a-scene');
-  const entity = document.createElement('a-entity');
-  entity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lon};`);
-  entity.setAttribute('geometry', 'primitive: sphere; radius: 1;');
-  entity.setAttribute('material', 'color: #FFFF00; opacity: 0.6;');
-  scene.appendChild(entity);
+    return data;
 }
