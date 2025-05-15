@@ -1,77 +1,37 @@
-class KMLParser {
-    /**
-     * Ανάγνωση ενός αρχείου KML και μετατροπή του σε GeoJSON
-     * @param {File} file - Το αρχείο KML προς φόρτωση
-     * @returns {Promise<Object>} - Υπόσχεση που επιστρέφει ένα GeoJSON αντικείμενο
-     */
-    static parse(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const text = event.target.result;
-                    const parser = new DOMParser();
-                    const kmlDoc = parser.parseFromString(text, 'text/xml');
-                    // Μετατροπή KML σε GeoJSON
-                    const geoJson = toGeoJSON.kml(kmlDoc);
-                    if (!geoJson || !geoJson.features) {
-                        throw new Error('Το KML αρχείο δεν περιέχει έγκυρα γεωμετρικά δεδομένα.');
-                    }
-                    // Εμπλουτισμός properties για κάθε feature από τα Placemark
-                    geoJson.features = geoJson.features.map((feature, index) => {
-                        const placemark = kmlDoc.getElementsByTagName('Placemark')[index];
-                        feature.properties = this.extractProperties(placemark);
-                        return feature;
-                    });
-                    // Επίπεδοποίηση όλων των υψομέτρων σε επίπεδο εδάφους (altitude = 0)
-                    geoJson.features.forEach(f => {
-                        const geom = f.geometry;
-                        if (!geom) return;
-                        if (geom.type === 'Polygon') {
-                            geom.coordinates = geom.coordinates.map(ring =>
-                                ring.map(([lon, lat, alt]) => [lon, lat, 0])
-                            );
-                        } else if (geom.type === 'LineString') {
-                            geom.coordinates = geom.coordinates.map(([lon, lat, alt]) => [lon, lat, 0]);
-                        } else if (geom.type === 'Point') {
-                            if (geom.coordinates.length === 3) {
-                                geom.coordinates[2] = 0;
-                            }
-                        }
-                    });
-                    resolve(geoJson);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = () => {
-                reject(new Error('Αποτυχία ανάγνωσης του αρχείου KML.'));
-            };
-            // Έναρξη ανάγνωσης αρχείου ως κείμενο
-            reader.readAsText(file);
-        });
-    }
+// kml-parser.js: Ανάλυση KML και δημιουργία οντοτήτων AR στο A-Frame
 
-    /**
-     * Εξαγωγή βασικών ιδιοτήτων (όνομα, περιγραφή, κλπ) από ένα Placemark στοιχείο
-     * @param {Element} placemark - Το στοιχείο Placemark από το KML DOM
-     * @returns {Object} - Αντικείμενο με τις ιδιότητες του Placemark
-     */
-    static extractProperties(placemark) {
-        const properties = {};
-        if (!placemark) return properties;
-        // Όνομα (Name)
-        const nameElem = placemark.getElementsByTagName('name')[0];
-        if (nameElem && nameElem.textContent) {
-            properties.name = nameElem.textContent;
-        }
-        // Περιγραφή (Description)
-        const descElem = placemark.getElementsByTagName('description')[0];
-        if (descElem && descElem.textContent) {
-            properties.description = descElem.textContent;
-        }
-        // Δημιουργία μοναδικού ID
-        properties.id = `feature-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        return properties;
+function parseKML(kmlText) {
+  try {
+    // Μετατροπή κειμένου KML σε XML DOM
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(kmlText, "text/xml");
+    // Εύρεση στοιχείων coordinates
+    const coordsNodes = xmlDoc.getElementsByTagName("coordinates");
+    if (coordsNodes.length === 0) {
+      throw new Error("Δεν βρέθηκαν συντεταγμένες στο αρχείο KML");
     }
+    // Λήψη του κειμένου συντεταγμένων και διαχωρισμός σε ζεύγη
+    const coordsText = coordsNodes[0].textContent.trim();
+    const coordsArray = coordsText.split(/\s+/);
+    // Δημιουργία οντότητας AR για κάθε συντεταγμένη
+    coordsArray.forEach(coord => {
+      const parts = coord.split(',');
+      const lon = parseFloat(parts[0]);
+      const lat = parseFloat(parts[1]);
+      addMarker(lat, lon);
+    });
+  } catch (e) {
+    alert("Σφάλμα κατά την επεξεργασία του αρχείου KML");
+    console.error("KML Parsing error:", e);
+  }
+}
+
+// Δημιουργεί μια σφαίρα στο AR στη δοθείσα γεωγραφική θέση
+function addMarker(lat, lon) {
+  const scene = document.querySelector('a-scene');
+  const entity = document.createElement('a-entity');
+  entity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lon};`);
+  entity.setAttribute('geometry', 'primitive: sphere; radius: 1;');
+  entity.setAttribute('material', 'color: #FFFF00; opacity: 0.6;');
+  scene.appendChild(entity);
 }
