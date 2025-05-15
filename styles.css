@@ -1,109 +1,94 @@
-:root {
-    --primary: #6366f1;
-    --secondary: #10b981;
-    --glass: rgba(255,255,255,0.12);
-    --background: rgba(17,24,39,0.98);
-    --text: #f3f4f6;
-    --text-muted: #a1a1aa;
-}
-
+/* Global styles */
 body {
     margin: 0;
-    font-family: 'Inter', sans-serif;
-    background: var(--background);
-    color: var(--text);
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow: hidden;
 }
-
-/* Glass UI */
-.glass-container {
+/* UI Controls container */
+#controls {
     position: fixed;
-    top: 2rem;
-    left: 2rem;
-    display: flex;
-    gap: 1rem;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
-    backdrop-filter: blur(16px);
-    background: var(--glass);
-    border-radius: 1rem;
-    padding: 1rem;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.upload-btn {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: rgba(99,102,241,0.2);
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-.upload-btn:hover {
-    background: rgba(99,102,241,0.3);
-    transform: translateY(-2px);
-}
-
-.upload-btn svg {
-    width: 1.2rem;
-    height: 1.2rem;
-    stroke: var(--primary);
-}
-
-.neon-btn {
-    width: 40px;
-    height: 40px;
+/* Style for buttons */
+#controls button {
+    background: rgba(255, 255, 255, 0.6);
     border: none;
-    border-radius: 50%;
-    background: var(--glass);
-    color: var(--primary);
+    padding: 10px 16px;
+    margin: 8px 4px;
+    border-radius: 8px;
+    font-size: 1em;
+    font-weight: 500;
+    color: #333;
     cursor: pointer;
-    display: grid;
-    place-items: center;
-    box-shadow: 0 0 12px var(--primary);
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15), -4px -4px 8px rgba(255, 255, 255, 0.7);
+    transition: transform 0.1s ease;
 }
-
-/* Info Panel */
-.info-panel {
+#controls button:active {
+    transform: scale(0.97);
+}
+/* Hide the file input element */
+#file-input {
+    display: none;
+}
+/* Status icons container */
+#status-icons {
     position: fixed;
-    top: 2rem;
-    right: -100%;
-    width: 320px;
-    background: var(--glass);
-    backdrop-filter: blur(20px);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    transition: right 0.3s;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-.info-panel.active {
-    right: 2rem;
-}
-
-.info-header {
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px 10px;
+    border-radius: 8px;
 }
-
-.close-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
+/* Status icons initial style */
+#status-icons span {
+    font-size: 1.2em;
+    margin: 0 4px;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    color: #ccc;
+}
+/* Status states */
+.active {
+    color: #2ecc71;
+}
+.error {
+    color: #e74c3c;
+}
+.searching {
+    color: #f1c40f;
+}
+/* Info box for feature details */
+#info-box {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    max-width: 600px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    color: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 1em;
+    line-height: 1.4;
+    display: none;
     cursor: pointer;
-}
-
-/* AR Elements */
-.ar-element {
-    cursor: pointer;
-    transition: transform 0.3s;
-}
-
-.ar-element:hover {
-    transform: scale(1.05);
 }
