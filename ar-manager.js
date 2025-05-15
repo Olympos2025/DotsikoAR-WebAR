@@ -1,140 +1,124 @@
-class ARManager {
-    constructor() {
-        this.scene = document.getElementById('ar-scene');
-        this.container = document.getElementById('ar-content');
-        this.initEventListeners();
-    }
-
-    initEventListeners() {
-        document.getElementById('kml-input').addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            for (const file of files) await this.loadKML(file);
+const arManager = {
+    init: function() {
+        // Get references to elements
+        const fileInput = document.getElementById('file-input');
+        const selectBtn = document.getElementById('select-button');
+        const clearBtn = document.getElementById('clear-button');
+        const arContainer = document.getElementById('ar-container');
+        const infoBox = document.getElementById('info-box');
+        const camIcon = document.getElementById('cam-icon');
+        const gpsIcon = document.getElementById('gps-icon');
+        
+        // Handle KML file selection
+        selectBtn.addEventListener('click', () => {
+            fileInput.click();
         });
-
-        document.getElementById('clear-btn').addEventListener('click', () => {
-            this.container.innerHTML = '';
-        });
-
-        this.scene.addEventListener('click', (e) => {
-            const entity = e.detail.intersection?.el;
-            if (entity?.classList.contains('ar-element')) {
-                this.showInfo(entity.dataset.featureId);
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files) {
+                for (let file of fileInput.files) {
+                    KmlParser.parseFile(file)
+                        .then(entities => {
+                            for (let ent of entities) {
+                                arContainer.appendChild(ent);
+                            }
+                        })
+                        .catch(err => console.error('Σφάλμα φόρτωσης KML:', err));
+                }
             }
         });
-    }
-
-    async loadKML(file) {
-        try {
-            const geoJson = await this.parseKML(file);
-            this.createEntities(geoJson.features);
-        } catch (error) {
-            alert(`Σφάλμα: ${error.message}`);
+        // Clear all AR entities
+        clearBtn.addEventListener('click', () => {
+            while (arContainer.firstChild) {
+                arContainer.removeChild(arContainer.firstChild);
+            }
+        });
+        // Hide info box on tap
+        infoBox.addEventListener('click', () => {
+            infoBox.style.display = 'none';
+        });
+        // Initialize status icons
+        gpsIcon.classList.add('searching');
+        camIcon.classList.add('searching');
+        // Watch GPS status
+        if ('geolocation' in navigator) {
+            navigator.geolocation.watchPosition(
+                (position) => {
+                    // GPS fix acquired
+                    gpsIcon.classList.remove('searching', 'error');
+                    gpsIcon.classList.add('active');
+                },
+                (error) => {
+                    // GPS error or denied
+                    gpsIcon.classList.remove('searching', 'active');
+                    gpsIcon.classList.add('error');
+                    console.warn('Σφάλμα GPS:', error);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+            );
+        }
+        // Watch camera permission status (if supported)
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'camera' }).then(permissionStatus => {
+                const updateCamStatus = () => {
+                    camIcon.classList.remove('active', 'error', 'searching');
+                    if (permissionStatus.state === 'granted') {
+                        camIcon.classList.add('active');
+                    } else if (permissionStatus.state === 'denied') {
+                        camIcon.classList.add('error');
+                    } else {
+                        camIcon.classList.add('searching');
+                    }
+                };
+                updateCamStatus();
+                permissionStatus.onchange = updateCamStatus;
+            }).catch(err => {
+                console.warn('Camera permissions API not supported.', err);
+                // Fallback: assume camera active after a delay if no error thrown
+                setTimeout(() => {
+                    camIcon.classList.remove('searching');
+                    camIcon.classList.add('active');
+                }, 3000);
+            });
+        } else {
+            // No permissions API, set camera icon to active after initialization delay
+            setTimeout(() => {
+                camIcon.classList.remove('searching');
+                camIcon.classList.add('active');
+            }, 3000);
+        }
+        // Handle iOS device orientation permission (Safari iOS 13+)
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Create a prompt button for enabling motion/orientation
+            const orientBtn = document.createElement('button');
+            orientBtn.textContent = 'Ενεργοποίηση Προσανατολισμού';
+            orientBtn.style.position = 'fixed';
+            orientBtn.style.top = '50%';
+            orientBtn.style.left = '50%';
+            orientBtn.style.transform = 'translate(-50%, -50%)';
+            orientBtn.style.padding = '15px 20px';
+            orientBtn.style.fontSize = '1.1em';
+            orientBtn.style.zIndex = '2000';
+            orientBtn.style.backdropFilter = 'blur(5px)';
+            orientBtn.style.webkitBackdropFilter = 'blur(5px)';
+            orientBtn.style.background = 'rgba(255, 255, 255, 0.7)';
+            orientBtn.style.border = 'none';
+            orientBtn.style.borderRadius = '8px';
+            orientBtn.style.fontWeight = 'bold';
+            orientBtn.style.cursor = 'pointer';
+            orientBtn.addEventListener('click', () => {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response === 'granted') {
+                        console.log('Προσανατολισμός συσκευής ενεργοποιήθηκε.');
+                    } else {
+                        console.warn('Άρνηση άδειας προσανατολισμού.');
+                    }
+                }).catch(err => {
+                    console.error('Σφάλμα αιτήματος προσανατολισμού:', err);
+                }).finally(() => {
+                    orientBtn.remove();
+                });
+            });
+            document.body.appendChild(orientBtn);
         }
     }
-
-    parseKML(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const kmlDoc = new DOMParser().parseFromString(e.target.result, 'text/xml');
-                    const geoJson = window.toGeoJSON.kml(kmlDoc);
-                    
-                    // Extract properties
-                    geoJson.features.forEach((feature, index) => {
-                        const placemark = kmlDoc.getElementsByTagName('Placemark')[index];
-                        feature.properties = {
-                            name: placemark?.getElementsByTagName('name')[0]?.textContent || 'Χωρίς όνομα',
-                            description: placemark?.getElementsByTagName('description')[0]?.textContent || '',
-                            id: `feature-${Date.now()}-${index}`
-                        };
-                    });
-
-                    resolve(geoJson);
-                } catch (error) {
-                    reject(new Error('Μη έγκυρο KML αρχείο'));
-                }
-            };
-            reader.onerror = () => reject(new Error('Αδυναμία ανάγνωσης αρχείου'));
-            reader.readAsText(file);
-        });
-    }
-
-    createEntities(features) {
-        features.forEach(feature => {
-            const entity = document.createElement('a-entity');
-            entity.classList.add('ar-element');
-            entity.setAttribute('data-feature-id', feature.properties.id);
-
-            switch(feature.geometry.type) {
-                case 'Polygon':
-                    this.createPolygon(entity, feature);
-                    break;
-                case 'LineString':
-                    this.createLine(entity, feature);
-                    break;
-                case 'Point':
-                    this.createPoint(entity, feature);
-                    break;
-            }
-
-            this.container.appendChild(entity);
-        });
-    }
-
-    createPolygon(entity, feature) {
-        const coords = feature.geometry.coordinates[0];
-        const center = this.calculateCenter(coords);
-        
-        entity.setAttribute('gps-new-entity-place', {
-            latitude: center.lat,
-            longitude: center.lon,
-            altitude: 0
-        });
-
-        entity.setAttribute('geometry', {
-            primitive: 'plane',
-            width: 10,
-            height: 10
-        });
-
-        entity.setAttribute('material', {
-            color: '#6366f1',
-            opacity: 0.4,
-            transparent: true
-        });
-    }
-
-    showInfo(featureId) {
-        const panel = document.querySelector('.info-panel');
-        const feature = [...this.container.children].find(e => e.dataset.featureId === featureId)?.__feature;
-        if (!feature) return;
-
-        document.getElementById('info-title').textContent = feature.properties.name;
-        document.getElementById('info-content').innerHTML = `
-            <p>${feature.properties.description}</p>
-            <div class="info-item">
-                <span>Τύπος</span>
-                <span>${feature.geometry.type}</span>
-            </div>
-        `;
-        panel.classList.add('active');
-    }
-
-    calculateCenter(coords) {
-        const lons = coords.map(c => c[0]);
-        const lats = coords.map(c => c[1]);
-        return {
-            lon: (Math.min(...lons) + Math.max(...lons)) / 2,
-            lat: (Math.min(...lats) + Math.max(...lats)) / 2
-        };
-    }
-}
-
-// Initialize
-const arManager = new ARManager();
-
-// Helper function
-function hideInfo() {
-    document.querySelector('.info-panel').classList.remove('active');
-}
+};
