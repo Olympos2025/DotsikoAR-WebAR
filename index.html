@@ -1,44 +1,37 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="UTF-8">
-  <title>MapLens WebAR</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-
-  <!-- Φορτώνουμε βιβλιοθήκες AR και A-Frame -->
-  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-
-  <!-- Οι δικές μας ρουτίνες διαχείρισης AR και KML -->
-  <script src="ar-manager.js"></script>
-  <script src="kml-parser.js"></script>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MapLens WebAR</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- A-Frame and AR.js library includes -->
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
 </head>
-
 <body>
-  <!-- Επικεφαλίδα της εφαρμογής -->
-  <header>MapLens</header>
-
-  <!-- Κουμπί επιλογής αρχείου KML -->
-  <label for="kmlFileInput" class="btn btn-top">Επιλογή KML Αρχείων</label>
-  <input type="file" id="kmlFileInput" accept=".kml" style="display:none;" />
-
-  <!-- Κουμπιά ελέγχου στο κάτω μέρος -->
-  <div id="bottomControls">
-    <button id="clearBtn" class="btn">Καθαρισμός</button>
-    <button id="refreshBtn" class="btn">Ανανέωση</button>
-    <button id="streetBtn" class="btn">Street View</button>
-    <span id="accuracyText">Ακρίβεια: <span id="accuracyValue">--</span> μ</span>
-  </div>
-
-  <!-- Εικόνα overlay για το Street View (αρχικά κρυφή) -->
-  <div id="streetOverlayContainer" style="display:none;">
-    <img id="streetOverlay" alt="Street View">
-  </div>
-
-  <!-- Σκηνή AR -->
-  <a-scene embedded arjs="sourceType: webcam; gpsMinDistance: 5; debugUIEnabled: false;">
-    <a-camera gps-new-camera></a-camera>
-  </a-scene>
+    <!-- UI Controls -->
+    <div id="ui">
+        <input type="file" id="fileInput" accept=".kml" style="display:none;"/>
+        <button id="loadBtn">Επιλογή αρχείου KML</button>
+        <button id="clearBtn">Καθαρισμός σκηνής AR</button>
+        <button id="refreshBtn">Ανανέωση</button>
+        <button id="backdropBtn">Εμφάνιση Ψηφιακού Υποβάθρου</button>
+    </div>
+    <!-- AR Scene -->
+    <a-scene vr-mode-ui="enabled: false" arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;" renderer="antialias: true; alpha: true;">
+        <a-camera gps-new-camera="gpsMinDistance: 5;"></a-camera>
+        <a-entity light="type: ambient; intensity: 1.0;"></a-entity>
+        <a-sky id="digital-sky" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/360%C2%B0_Panorama_vor_Stiftskirche_St.Maria_Magdalena_in_Flaesheim.jpg/2560px-360%C2%B0_Panorama_vor_Stiftskirche_St.Maria_Magdalena_in_Flaesheim.jpg" radius="5000" visible="false"></a-sky>
+    </a-scene>
+    <!-- iOS Motion Permission Modal -->
+    <div id="ios-permission-modal">
+        <p>Πατήστε 'Έναρξη AR' για να ενεργοποιήσετε τους αισθητήρες κίνησης.</p>
+        <button id="ios-permission-btn">Έναρξη AR</button>
+    </div>
+    <!-- App Scripts -->
+    <script src="kml-parser.js"></script>
+    <script src="ar-manager.js"></script>
 </body>
 </html>
