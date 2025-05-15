@@ -1,47 +1,140 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MapLens – WebAR KML Viewer</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- A-Frame and AR.js libraries -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <meta name="author" content="Thomas G. Lagkas">
+    <title>MapLens - WebAR KML Viewer</title>
+    <!-- Βασικές βιβλιοθήκες -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mapbox/togeojson@2.1.0/dist/toGeoJSON.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
-    <!-- KML to GeoJSON library -->
-    <script src="https://unpkg.com/@mapbox/togeojson@0.16.2/togeojson.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- File input (hidden) and UI controls -->
-    <div id="controls">
-        <button id="select-button">Επιλογή KML</button>
-        <button id="clear-button">Καθαρισμός</button>
-        <input type="file" id="file-input" accept=".kml" multiple>
+    <!-- Κεφαλίδα εφαρμογής -->
+    <header class="app-header">
+        <h1 class="app-title">MapLens</h1>
+    </header>
+
+    <!-- Επιλογή αρχείων KML με σύγχρονο styling -->
+    <div class="file-input-container">
+        <label for="file-input" class="file-input-label">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Επιλογή KML Αρχείων
+        </label>
+        <input type="file" id="file-input" accept=".kml" multiple hidden>
     </div>
-    <!-- Status icons for Camera and GPS -->
-    <div id="status-icons">
-        <span id="cam-icon">📷</span>
-        <span id="gps-icon">📡</span>
+
+    <!-- Πίνακας ελέγχου (κουμπιά) -->
+    <div class="control-panel">
+        <button id="clear-button" class="neo-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+            Καθαρισμός
+        </button>
+        <button id="refresh-button" class="neo-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Ανανέωση
+        </button>
+        <button id="streetview-button" class="neo-button">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18">
+                <path d="M12 20.5c4.142 0 7.5-3.358 7.5-7.5s-3.358-7.5-7.5-7.5-7.5 3.358-7.5 7.5 3.358 7.5 7.5 7.5z"></path>
+                <path d="M2 12h1.5m17 0H22"></path>
+                <path d="M12 2v1.5m0 17V22"></path>
+            </svg>
+            Street View
+        </button>
     </div>
-    <!-- Info box for feature details -->
-    <div id="info-box"></div>
-    <!-- AR.js scene with camera and container for KML entities -->
+
+    <!-- Overlay Street View εικόνα (αρχικά κρυφή) -->
+    <div id="streetview-overlay">
+        <img id="streetview-image" src="" alt="Street View Overlay">
+    </div>
+
+    <!-- Slider ρύθμισης διαφάνειας overlay -->
+    <input type="range" id="overlay-slider" class="slider" min="0" max="100" value="50">
+
+    <!-- Ένδειξη ακρίβειας GPS -->
+    <div id="gps-accuracy">Ακρίβεια: - μ</div>
+
+    <!-- Κύρια σκηνή AR -->
     <a-scene vr-mode-ui="enabled: false"
              arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
              renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true">
-        <!-- Camera with location-based tracking -->
-        <a-camera gps-new-camera="gpsMinDistance: 20; gpsMaxDistance: 20000; gpsHeadingTolerance: 10; gpsAltitudeEnabled: true"></a-camera>
-        <!-- Container for AR content (KML entities) -->
+        <!-- Κάμερα με location-based tracking -->
+        <a-camera gps-new-camera gps-min-distance="20" gps-max-distance="20000" gps-heading-tolerance="10" gps-altitude-enabled="true"></a-camera>
+        <!-- Container για τα AR στοιχεία -->
         <a-entity id="ar-container"></a-entity>
     </a-scene>
-    <!-- Application scripts -->
+
+    <!-- Φόρτωση (loading) animation -->
+    <div class="loading-container" id="loading">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+    </div>
+
+    <!-- Scripts εφαρμογής -->
     <script src="kml-parser.js"></script>
     <script src="ar-manager.js"></script>
     <script>
-        // Initialize AR manager when DOM is ready
+        // Έλεγχος κατάστασης κάμερας & GPS, και εκκίνηση AR Manager
         document.addEventListener('DOMContentLoaded', () => {
-            arManager.init();
+            const gpsOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 };
+            // Ζητάμε άδεια κάμερας μόλις φορτώσει η σελίδα
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+                    .then(stream => {
+                        console.log("Camera access granted");
+                        // Κλείσιμο stream κάμερας (θα επανανοίξει μέσω AR.js)
+                        stream.getTracks().forEach(track => track.stop());
+                        // Αρχικοποίηση AR Manager μετά την άδεια κάμερας
+                        arManager.init();
+                    })
+                    .catch(error => {
+                        console.error("Camera access denied:", error);
+                        alert("Παρακαλώ επιτρέψτε πρόσβαση στην κάμερα για να λειτουργήσει η εφαρμογή.");
+                    });
+            } else {
+                alert("Ο περιηγητής σας δεν υποστηρίζει κάμερα.");
+            }
+            // Παρακολούθηση τοποθεσίας GPS για ενημέρωση ακρίβειας
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(position => {
+                    // Ενημέρωση ενδείξεων ακρίβειας
+                    const acc = position.coords.accuracy || 0;
+                    document.getElementById('gps-accuracy').textContent = `Ακρίβεια: ${acc.toFixed(0)} μ`;
+                    // Απόκρυψη loading όταν ληφθεί πρώτη τοποθεσία
+                    document.getElementById('loading').style.display = 'none';
+                    // Αποθήκευση θέσης στον AR Manager (fallback)
+                    if (arManager) {
+                        arManager.userPosition = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            altitude: position.coords.altitude || 0
+                        };
+                    }
+                }, error => {
+                    console.error("GPS error:", error);
+                }, gpsOptions);
+            } else {
+                alert("Ο περιηγητής σας δεν υποστηρίζει GPS.");
+            }
         });
     </script>
 </body>
