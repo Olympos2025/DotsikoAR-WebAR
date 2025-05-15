@@ -2,9 +2,12 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Courier New', monospace; /* Εφαρμογή γραμματοσειράς γραφομηχανής */
+    background-color: #f9f9f9; /* Ελαφρώς ανοιχτό φόντο για καλύτερη αντίθεση */
     overflow: hidden;
+    border: 10px dashed white; /* Λευκό περίγραμμα με παύλες γύρω από την οθόνη */
 }
+
 /* UI Controls container */
 #controls {
     position: fixed;
@@ -15,32 +18,38 @@ body {
     display: flex;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
 /* Style for buttons */
 #controls button {
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 1);
     border: none;
     padding: 10px 16px;
     margin: 8px 4px;
     border-radius: 8px;
     font-size: 1em;
-    font-weight: 500;
-    color: #333;
+    font-weight: normal;
+    color: #000; /* Μαύρο κείμενο */
     cursor: pointer;
-    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.15), -4px -4px 8px rgba(255, 255, 255, 0.7);
+    text-transform: lowercase; /* Κείμενο σε πεζά */
+    letter-spacing: 1px;
+    font-family: 'Courier New', monospace; /* Γραμματοσειρά γραφομηχανής */
     transition: transform 0.1s ease;
 }
+
+/* Buttons on hover or active */
+#controls button:hover {
+    transform: scale(1.05);
+}
+
 #controls button:active {
     transform: scale(0.97);
 }
-/* Hide the file input element */
-#file-input {
-    display: none;
-}
+
 /* Status icons container */
 #status-icons {
     position: fixed;
@@ -55,6 +64,7 @@ body {
     padding: 6px 10px;
     border-radius: 8px;
 }
+
 /* Status icons initial style */
 #status-icons span {
     font-size: 1.2em;
@@ -62,16 +72,7 @@ body {
     text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
     color: #ccc;
 }
-/* Status states */
-.active {
-    color: #2ecc71;
-}
-.error {
-    color: #e74c3c;
-}
-.searching {
-    color: #f1c40f;
-}
+
 /* Info box for feature details */
 #info-box {
     position: fixed;
@@ -91,4 +92,12 @@ body {
     line-height: 1.4;
     display: none;
     cursor: pointer;
+}
+
+/* Adjust AR scene size */
+a-scene {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
