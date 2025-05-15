@@ -1,37 +1,143 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MapLens WebAR</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- A-Frame and AR.js library includes -->
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>MapLens WebAR</title>
+  <!-- Φόρτωση A-Frame και AR.js (location-based) βιβλιοθηκών -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+  <style>
+    /* Βασικές μορφοποιήσεις για πλήρη οθόνη και modal */
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+    #permission-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      display: none;                /* ξεκινά κρυφό, θα εμφανιστεί μόνο αν χρειάζεται */
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 9999;
+    }
+    #permission-modal .modal-content {
+      max-width: 80%;
+      padding: 1em;
+    }
+    #permission-modal p {
+      font-size: 1.1em;
+      line-height: 1.4em;
+      margin-bottom: 1.2em;
+    }
+    #start-ar-btn {
+      font-size: 1.1em;
+      padding: 0.6em 1.2em;
+      background: #006dcf;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+    }
+    #start-ar-btn:active { background: #0053a0; }
+  </style>
 </head>
 <body>
-    <!-- UI Controls -->
-    <div id="ui">
-        <input type="file" id="fileInput" accept=".kml" style="display:none;"/>
-        <button id="loadBtn">Επιλογή αρχείου KML</button>
-        <button id="clearBtn">Καθαρισμός σκηνής AR</button>
-        <button id="refreshBtn">Ανανέωση</button>
-        <button id="backdropBtn">Εμφάνιση Ψηφιακού Υποβάθρου</button>
+  <!-- Modal για αίτημα άδειας σε iOS Safari -->
+  <div id="permission-modal">
+    <div class="modal-content">
+      <p>Η εμπειρία AR χρειάζεται πρόσβαση στους αισθητήρες κίνησης της συσκευής (γυροσκόπιο/επιταχυνσιόμετρο). Πατήστε «Έναρξη AR» και επιτρέψτε την πρόσβαση για να συνεχίσετε.</p>
+      <button id="start-ar-btn">Έναρξη AR</button>
     </div>
-    <!-- AR Scene -->
-    <a-scene vr-mode-ui="enabled: false" arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;" renderer="antialias: true; alpha: true;">
-        <a-camera gps-new-camera="gpsMinDistance: 5;"></a-camera>
-        <a-entity light="type: ambient; intensity: 1.0;"></a-entity>
-        <a-sky id="digital-sky" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/360%C2%B0_Panorama_vor_Stiftskirche_St.Maria_Magdalena_in_Flaesheim.jpg/2560px-360%C2%B0_Panorama_vor_Stiftskirche_St.Maria_Magdalena_in_Flaesheim.jpg" radius="5000" visible="false"></a-sky>
-    </a-scene>
-    <!-- iOS Motion Permission Modal -->
-    <div id="ios-permission-modal">
-        <p>Πατήστε 'Έναρξη AR' για να ενεργοποιήσετε τους αισθητήρες κίνησης.</p>
-        <button id="ios-permission-btn">Έναρξη AR</button>
-    </div>
-    <!-- App Scripts -->
-    <script src="kml-parser.js"></script>
-    <script src="ar-manager.js"></script>
+  </div>
+
+  <script>
+    // Αυτοεκτελούμενη συνάρτηση για να μην μολύνουμε το global scope
+    (function() {
+      const modal = document.getElementById('permission-modal');
+      const startBtn = document.getElementById('start-ar-btn');
+
+      // Συνάρτηση έναρξης της AR σκηνής (κάμερα, GPS, φόρτωση KML)
+      function startAR() {
+        // Κλείσιμο modal (αν είναι ανοιχτό)
+        if (modal) {
+          modal.style.display = 'none';
+        }
+
+        // Δημιουργία A-Frame σκηνής με ενεργοποιημένο το AR.js (WebAR) 
+        const scene = document.createElement('a-scene');
+        scene.setAttribute('vr-mode-ui', 'enabled: false');
+        scene.setAttribute('arjs', 'sourceType: webcam; videoTexture: true; debugUIEnabled: false');
+        scene.setAttribute('renderer', 'antialias: true; alpha: true');
+
+        // Προσθήκη κάμερας με GPS/Orientation εντοπισμό (AR.js component)
+        const camera = document.createElement('a-camera');
+        camera.setAttribute('gps-new-camera', 'gpsMinDistance: 5');
+        scene.appendChild(camera);
+
+        // (Προαιρετικά: εδώ μπορούν να προστεθούν κουμπιά ή άλλα στοιχεία UI πάνω από το AR, εάν χρειάζεται)
+
+        // Προσθήκη της σκηνής στο DOM (ξεκινά η κάμερα & GPS)
+        document.body.appendChild(scene);
+
+        // Φόρτωση σημείων από αρχείο KML
+        fetch('points.kml')
+          .then(response => response.text())
+          .then(kmlText => {
+            const parser = new DOMParser();
+            const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
+            const placemarks = kmlDoc.getElementsByTagName('Placemark');
+            for (let i = 0; i < placemarks.length; i++) {
+              const pm = placemarks[i];
+              const nameEl = pm.getElementsByTagName('name')[0];
+              const coordsEl = pm.getElementsByTagName('coordinates')[0];
+              if (!coordsEl) continue;
+              const coords = coordsEl.textContent.trim();
+              if (coords) {
+                // Το format είναι "μήκος,πλάτος,ύψος"
+                const [lon, lat] = coords.split(',').map(parseFloat);
+                // Δημιουργία οντότητας κειμένου στο AR στο συγκεκριμένο σημείο
+                const textEntity = document.createElement('a-entity');
+                textEntity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lon}`);
+                textEntity.setAttribute('text', `value: ${nameEl ? nameEl.textContent : 'Σημείο'}; color: #ffff00; align: center; width: 20;`);
+                textEntity.setAttribute('look-at', '[gps-new-camera]');   // ώστε να βλέπει πάντα προς τον χρήστη
+                textEntity.setAttribute('scale', '20 20 20');             // αυξάνουμε το μέγεθος για να είναι ορατό
+                scene.appendChild(textEntity);
+              }
+            }
+          })
+          .catch(err => {
+            console.error('Σφάλμα φόρτωσης KML:', err);
+          });
+      }
+
+      // Έλεγχος αν απαιτείται άδεια DeviceOrientation (iOS 13+)
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // Σε iOS Safari χρειάζεται άδεια χρήσης αισθητήρων κίνησης
+        modal.style.display = 'flex';
+        startBtn.addEventListener('click', function() {
+          // Με το πάτημα του κουμπιού, ζητάμε άδεια για DeviceOrientation
+          DeviceOrientationEvent.requestPermission().then(response => {
+            if (response === 'granted') {
+              // Ο χρήστης επέτρεψε - εκκίνηση AR
+              startAR();
+            } else {
+              // Ο χρήστης πάτησε "Μη Επίτρεψη" (ή δεν έδωσε άδεια)
+              alert('Δεν δόθηκε άδεια πρόσβασης στους αισθητήρες κίνησης - η λειτουργία AR ενδέχεται να μην λειτουργεί σωστά.');
+              startAR();
+            }
+          }).catch(error => {
+            // Σε περίπτωση σφάλματος ή μη υποστήριξης
+            alert('Δεν είναι δυνατή η πρόσβαση στους αισθητήρες κίνησης (σφάλμα ή μη υποστηριζόμενη συσκευή).');
+            startAR();
+            console.error('Sensor permission error:', error);
+          });
+        });
+      } else {
+        // Σε μη iOS συσκευές ή παλαιότερα iOS (ή ήδη έχει δοθεί άδεια), ξεκινάμε απευθείας
+        startAR();
+      }
+    })();
+  </script>
 </body>
 </html>
