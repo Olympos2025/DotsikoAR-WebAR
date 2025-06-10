@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="author" content="Thomas G. Lagkas">
-    <meta name="email" content="thomas.lagkas@outlook.com">
     <title>MapLens - WebAR KML Viewer</title>
     
-    <!-- A-Frame και AR.js -->
+    <!-- A-Frame -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
     <script src="https://unpkg.com/@tmcw/togeojson@4.6.2"></script>
@@ -18,13 +16,7 @@
             --secondary: #10b981;
             --danger: #ef4444;
             --glass: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
             --text: #ffffff;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        * {
-            box-sizing: border-box;
         }
 
         body {
@@ -34,47 +26,17 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: var(--text);
             overflow: hidden;
-            user-select: none;
         }
 
-        /* Header */
-        .app-header {
+        .controls {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            box-shadow: var(--shadow);
-        }
-
-        .app-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Controls Panel */
-        .controls-panel {
-            position: fixed;
-            top: 80px;
+            top: 20px;
             left: 20px;
             right: 20px;
             display: flex;
-            gap: 12px;
+            gap: 10px;
             justify-content: center;
-            z-index: 999;
+            z-index: 1000;
         }
 
         .btn {
@@ -83,8 +45,6 @@
             border-radius: 25px;
             background: var(--glass);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
             color: var(--text);
             font-weight: 600;
             font-size: 14px;
@@ -93,17 +53,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: var(--shadow);
         }
 
         .btn:hover {
             background: rgba(255, 255, 255, 0.25);
             transform: translateY(-2px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
         }
 
         .btn-primary {
@@ -114,12 +68,6 @@
             background: linear-gradient(45deg, var(--danger), #dc2626);
         }
 
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-
         .file-input {
             position: absolute;
             left: -9999px;
@@ -128,15 +76,14 @@
             height: 0.1px;
         }
 
-        /* Status Panel */
-        .status-panel {
+        .status {
             position: fixed;
-            top: 140px;
+            top: 80px;
             right: 20px;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            z-index: 998;
+            z-index: 999;
         }
 
         .status-item {
@@ -144,69 +91,59 @@
             border-radius: 20px;
             background: var(--glass);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
             font-size: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
-            min-width: 120px;
         }
 
-        .status-indicator {
+        .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: var(--danger);
-            animation: pulse 2s infinite;
         }
 
-        .status-indicator.active {
+        .status-dot.active {
             background: var(--secondary);
-            animation: none;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        /* Info Panel */
-        .info-panel {
+        .info {
             position: fixed;
             bottom: 20px;
             left: 20px;
             right: 20px;
             background: var(--glass);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
             border-radius: 15px;
             padding: 16px;
+            font-size: 14px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 998;
             transform: translateY(100%);
             transition: transform 0.3s ease;
-            z-index: 997;
-            max-height: 200px;
-            overflow-y: auto;
         }
 
-        .info-panel.show {
+        .info.show {
             transform: translateY(0);
         }
 
-        .info-content {
-            font-size: 14px;
-            line-height: 1.4;
+        a-scene {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 0 !important;
         }
 
-        /* Loading */
         .loading {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 996;
+            z-index: 995;
             display: none;
         }
 
@@ -230,125 +167,45 @@
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
         }
-
-        /* AR Scene */
-        a-scene {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            z-index: 0 !important;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .controls-panel {
-                flex-wrap: wrap;
-            }
-            
-            .btn {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-            
-            .status-panel {
-                right: 10px;
-                top: 120px;
-            }
-        }
-
-        /* Error Messages */
-        .error-message {
-            position: fixed;
-            top: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--danger);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 14px;
-            z-index: 1001;
-            animation: slideDown 0.3s ease;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-100%); }
-            to { transform: translateX(-50%) translateY(0); }
-        }
     </style>
 </head>
 
 <body>
-    <!-- Header -->
-    <div class="app-header">
-        <h1 class="app-title">MapLens</h1>
-    </div>
-
     <!-- Controls -->
-    <div class="controls-panel">
-        <div class="file-input-wrapper">
-            <input type="file" id="kml-input" class="file-input" accept=".kml" multiple>
-            <label for="kml-input" class="btn btn-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17,8 12,3 7,8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Φόρτωση KML
-            </label>
-        </div>
+    <div class="controls">
+        <input type="file" id="kml-input" class="file-input" accept=".kml" multiple>
+        <label for="kml-input" class="btn btn-primary">
+            📁 Φόρτωση KML
+        </label>
+        
+        <button id="test-btn" class="btn">
+            🎯 Δοκιμή
+        </button>
         
         <button id="clear-btn" class="btn btn-danger">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18l-2 13H5L3 6z"></path>
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            Καθαρισμός
-        </button>
-        
-        <button id="refresh-btn" class="btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6"></path>
-                <path d="M1 20v-6h6"></path>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
-                <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-            </svg>
-            Ανανέωση
-        </button>
-        
-        <button id="location-btn" class="btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 6v6l4 2"></path>
-            </svg>
-            Θέση
+            🗑️ Καθαρισμός
         </button>
     </div>
 
     <!-- Status -->
-    <div class="status-panel">
+    <div class="status">
         <div class="status-item">
-            <span class="status-indicator" id="camera-indicator"></span>
-            <span id="camera-status">Κάμερα: Αναμονή</span>
+            <span class="status-dot" id="camera-dot"></span>
+            <span id="camera-text">Κάμερα</span>
         </div>
         <div class="status-item">
-            <span class="status-indicator" id="gps-indicator"></span>
-            <span id="gps-status">GPS: Αναμονή</span>
+            <span class="status-dot" id="gps-dot"></span>
+            <span id="gps-text">GPS</span>
         </div>
         <div class="status-item">
-            <span class="status-indicator" id="files-indicator"></span>
-            <span id="files-status">Αρχεία: 0</span>
+            <span class="status-dot" id="files-dot"></span>
+            <span id="files-text">Αρχεία: 0</span>
         </div>
     </div>
 
     <!-- Info Panel -->
-    <div class="info-panel" id="info-panel">
-        <div class="info-content" id="info-content">
-            Φορτώστε ένα KML αρχείο για να ξεκινήσετε. 
-            Βεβαιωθείτε ότι έχετε επιτρέψει την πρόσβαση στην κάμερα και την τοποθεσία.
-        </div>
+    <div class="info" id="info">
+        Φορτώστε ένα KML αρχείο για να ξεκινήσετε
     </div>
 
     <!-- Loading -->
@@ -361,63 +218,53 @@
     </div>
 
     <!-- AR Scene -->
-    <a-scene
-        id="ar-scene"
+    <a-scene 
         vr-mode-ui="enabled: false"
-        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true; sortObjects: true;"
-        embedded
-        style="height: 100vh; width: 100vw;">
+        arjs="sourceType: webcam; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
+        embedded>
         
         <a-camera 
-            id="ar-camera"
-            gps-new-camera="gpsMinDistance: 5; gpsMaxDistance: 20000; positionMinAccuracy: 100; alert: false;"
-            rotation-reader
+            id="camera"
+            gps-new-camera="gpsMinDistance: 5; gpsMaxDistance: 10000;"
             look-controls="enabled: false"
-            wasd-controls="enabled: false"
-            cursor="rayOrigin: mouse">
+            wasd-controls="enabled: false">
         </a-camera>
         
-        <a-entity id="ar-container"></a-entity>
+        <a-entity id="content"></a-entity>
     </a-scene>
 
     <script>
         class MapLensAR {
             constructor() {
-                this.scene = document.getElementById('ar-scene');
-                this.camera = document.getElementById('ar-camera');
-                this.container = document.getElementById('ar-container');
-                this.loadedFeatures = [];
+                this.scene = document.querySelector('a-scene');
+                this.camera = document.getElementById('camera');
+                this.content = document.getElementById('content');
                 this.userPosition = null;
+                this.features = [];
                 
-                this.initializeApp();
+                this.init();
             }
 
-            async initializeApp() {
-                console.log('MapLens: Initializing...');
-                this.showInfo('Αρχικοποίηση εφαρμογής...');
+            async init() {
+                console.log('🚀 MapLens initializing...');
                 
-                // Wait for scene to load
-                await this.waitForSceneLoad();
+                // Wait for scene
+                await this.waitForScene();
                 
-                // Initialize event listeners
-                this.initEventListeners();
+                // Setup events
+                this.setupEvents();
                 
-                // Initialize GPS
+                // Initialize GPS and camera
                 this.initGPS();
-                
-                // Initialize camera
                 this.initCamera();
                 
-                // Add test marker close to user
-                this.addTestMarker();
-                
-                console.log('MapLens: Ready!');
-                this.showInfo('Εφαρμογή έτοιμη! Φορτώστε ένα KML αρχείο.');
+                console.log('✅ MapLens ready!');
+                this.showInfo('Εφαρμογή έτοιμη! Φορτώστε KML ή πατήστε "Δοκιμή"');
             }
 
-            waitForSceneLoad() {
-                return new Promise((resolve) => {
+            waitForScene() {
+                return new Promise(resolve => {
                     if (this.scene.hasLoaded) {
                         resolve();
                     } else {
@@ -426,13 +273,17 @@
                 });
             }
 
-            initEventListeners() {
+            setupEvents() {
                 // File input
                 document.getElementById('kml-input').addEventListener('change', (e) => {
-                    const files = Array.from(e.target.files);
-                    if (files.length > 0) {
-                        this.loadKMLFiles(files);
+                    if (e.target.files.length > 0) {
+                        this.loadFiles(e.target.files);
                     }
+                });
+
+                // Test button - creates visible objects regardless of GPS
+                document.getElementById('test-btn').addEventListener('click', () => {
+                    this.createTestObjects();
                 });
 
                 // Clear button
@@ -440,708 +291,389 @@
                     this.clearAll();
                 });
 
-                // Refresh button
-                document.getElementById('refresh-btn').addEventListener('click', () => {
-                    location.reload();
-                });
-                
-                // Location button
-                document.getElementById('location-btn').addEventListener('click', () => {
-                    this.showCurrentLocation();
-                });
-
-                // Scene click events
+                // Scene click
                 this.scene.addEventListener('click', (e) => {
                     const entity = e.detail.intersection?.el;
-                    if (entity && entity.dataset.featureId) {
-                        this.showFeatureInfo(entity.dataset.featureId);
+                    if (entity && entity.dataset.info) {
+                        this.showInfo(entity.dataset.info);
                     }
                 });
             }
 
             initGPS() {
                 if (!navigator.geolocation) {
-                    this.showError('GPS δεν υποστηρίζεται σε αυτή τη συσκευή');
+                    this.updateStatus('gps', false, 'GPS: Μη διαθέσιμο');
                     return;
                 }
-
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 0
-                };
 
                 navigator.geolocation.watchPosition(
                     (position) => {
                         this.userPosition = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            altitude: position.coords.altitude || 0,
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            alt: position.coords.altitude || 0,
                             accuracy: position.coords.accuracy
                         };
-
-                        this.updateStatus('gps', true, `GPS: Ενεργό (±${Math.round(position.coords.accuracy)}m)`);
-                        console.log('GPS Position:', this.userPosition);
+                        
+                        this.updateStatus('gps', true, `GPS: ±${Math.round(position.coords.accuracy)}m`);
+                        console.log('📍 GPS:', this.userPosition);
                     },
                     (error) => {
                         this.updateStatus('gps', false, 'GPS: Σφάλμα');
                         console.error('GPS Error:', error);
-                        
-                        if (error.code === error.PERMISSION_DENIED) {
-                            this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στην τοποθεσία');
-                        }
                     },
-                    options
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                    }
                 );
             }
 
             initCamera() {
-                // Check camera access
                 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     navigator.mediaDevices.getUserMedia({ video: true })
-                        .then((stream) => {
+                        .then(() => {
                             this.updateStatus('camera', true, 'Κάμερα: Ενεργή');
-                            // Stop the stream immediately, AR.js will handle it
-                            stream.getTracks().forEach(track => track.stop());
                         })
                         .catch((error) => {
                             this.updateStatus('camera', false, 'Κάμερα: Σφάλμα');
                             console.error('Camera Error:', error);
-                            this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στην κάμερα');
                         });
-                } else {
-                    this.showError('Κάμερα δεν υποστηρίζεται σε αυτό το περιβάλλον');
                 }
             }
 
-            async loadKMLFiles(files) {
+            async loadFiles(files) {
                 this.showLoading(true);
-                this.showInfo('Φόρτωση αρχείων...');
-
                 let totalFeatures = 0;
 
                 for (const file of files) {
                     try {
-                        const features = await this.loadKML(file);
+                        const features = await this.parseKML(file);
+                        this.features.push(...features);
                         totalFeatures += features.length;
-                        console.log(`Loaded ${features.length} features from ${file.name}`);
+                        
+                        // Create AR objects for each feature
+                        features.forEach(feature => this.createARObject(feature));
+                        
+                        console.log(`📁 Loaded ${features.length} features from ${file.name}`);
                     } catch (error) {
-                        console.error(`Error loading ${file.name}:`, error);
-                        this.showError(`Σφάλμα στο αρχείο ${file.name}: ${error.message}`);
+                        console.error(`❌ Error loading ${file.name}:`, error);
+                        this.showInfo(`Σφάλμα: ${error.message}`);
                     }
                 }
 
-                this.updateStatus('files', totalFeatures > 0, `Αρχεία: ${totalFeatures} στοιχεία`);
+                this.updateStatus('files', totalFeatures > 0, `Αρχεία: ${totalFeatures}`);
                 this.showLoading(false);
                 
                 if (totalFeatures > 0) {
-                    this.showInfo(`Φορτώθηκαν επιτυχώς ${totalFeatures} στοιχεία! Στρέψτε την κάμερα προς την περιοχή.`);
+                    this.showInfo(`✅ Φορτώθηκαν ${totalFeatures} στοιχεία! Κοιτάξτε γύρω σας`);
                 } else {
-                    this.showError('Δεν βρέθηκαν έγκυρα στοιχεία στα αρχεία KML');
+                    this.showInfo('❌ Δεν βρέθηκαν έγκυρα στοιχεία');
                 }
             }
 
-            loadKML(file) {
+            parseKML(file) {
                 return new Promise((resolve, reject) => {
                     const reader = new FileReader();
                     
                     reader.onload = (e) => {
                         try {
-                            const kmlString = e.target.result;
-                            console.log('KML Content:', kmlString.substring(0, 500) + '...');
+                            const kmlDoc = new DOMParser().parseFromString(e.target.result, 'text/xml');
+                            const features = [];
+                            const placemarks = kmlDoc.querySelectorAll('Placemark');
                             
-                            const parser = new DOMParser();
-                            const kmlDoc = parser.parseFromString(kmlString, 'text/xml');
-                            
-                            // Check for parsing errors
-                            const parseError = kmlDoc.querySelector('parsererror');
-                            if (parseError) {
-                                throw new Error('Μη έγκυρο XML');
-                            }
-
-                            // Convert to GeoJSON - with better error handling
-                            let geoJson;
-                            try {
-                                if (typeof toGeoJSON !== 'undefined' && toGeoJSON.kml) {
-                                    geoJson = toGeoJSON.kml(kmlDoc);
-                                    console.log('Converted GeoJSON:', geoJson);
-                                } else {
-                                    // Fallback to manual parsing
-                                    geoJson = this.parseKMLManually(kmlDoc);
+                            placemarks.forEach((placemark, index) => {
+                                const name = placemark.querySelector('name')?.textContent || `Στοιχείο ${index + 1}`;
+                                const description = placemark.querySelector('description')?.textContent || '';
+                                
+                                // Parse Polygon
+                                const polygon = placemark.querySelector('Polygon outerBoundaryIs LinearRing coordinates');
+                                if (polygon) {
+                                    const coords = this.parseCoordinates(polygon.textContent);
+                                    if (coords.length >= 3) {
+                                        features.push({
+                                            id: `polygon-${Date.now()}-${index}`,
+                                            type: 'Polygon',
+                                            name: name,
+                                            description: description,
+                                            coordinates: coords,
+                                            center: this.calculateCenter(coords)
+                                        });
+                                    }
                                 }
-                            } catch (conversionError) {
-                                console.error('toGeoJSON failed, trying manual parsing:', conversionError);
-                                geoJson = this.parseKMLManually(kmlDoc);
-                            }
-
-                            if (!geoJson || !geoJson.features || geoJson.features.length === 0) {
-                                throw new Error('Δεν βρέθηκαν γεωγραφικά στοιχεία στο αρχείο');
-                            }
-
-                            console.log(`Found ${geoJson.features.length} features`);
-
-                            // Process features
-                            const processedFeatures = this.processFeatures(geoJson.features);
-                            
-                            // Create AR entities
-                            processedFeatures.forEach(feature => {
-                                this.createAREntity(feature);
+                                
+                                // Parse Point
+                                const point = placemark.querySelector('Point coordinates');
+                                if (point) {
+                                    const coords = this.parseCoordinates(point.textContent);
+                                    if (coords.length > 0) {
+                                        features.push({
+                                            id: `point-${Date.now()}-${index}`,
+                                            type: 'Point',
+                                            name: name,
+                                            description: description,
+                                            coordinates: coords,
+                                            center: coords[0]
+                                        });
+                                    }
+                                }
                             });
-
-                            this.loadedFeatures.push(...processedFeatures);
-                            resolve(processedFeatures);
-
+                            
+                            resolve(features);
                         } catch (error) {
-                            console.error('KML Loading Error:', error);
-                            reject(new Error(`Σφάλμα ανάλυσης: ${error.message}`));
+                            reject(new Error('Μη έγκυρο KML αρχείο'));
                         }
                     };
-
-                    reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης αρχείου'));
+                    
+                    reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης'));
                     reader.readAsText(file);
                 });
             }
 
-            parseKMLManually(kmlDoc) {
-                const features = [];
-                const placemarks = kmlDoc.querySelectorAll('Placemark');
+            parseCoordinates(text) {
+                const coords = [];
+                const pairs = text.trim().split(/\s+/);
                 
-                console.log(`Found ${placemarks.length} placemarks`);
+                pairs.forEach(pair => {
+                    const [lng, lat, alt = 0] = pair.split(',').map(parseFloat);
+                    if (!isNaN(lng) && !isNaN(lat)) {
+                        coords.push({ lng, lat, alt });
+                    }
+                });
                 
-                placemarks.forEach((placemark, index) => {
-                    const name = placemark.querySelector('name')?.textContent || `Στοιχείο ${index + 1}`;
-                    const description = placemark.querySelector('description')?.textContent || '';
-                    
-                    // Handle Polygon
-                    const polygon = placemark.querySelector('Polygon');
-                    if (polygon) {
-                        const coordinatesText = polygon.querySelector('outerBoundaryIs LinearRing coordinates')?.textContent;
-                        if (coordinatesText) {
-                            const coordPairs = coordinatesText.trim().split(/\s+/);
-                            const coordinates = coordPairs.map(pair => {
-                                const [lng, lat, alt = 0] = pair.split(',').map(parseFloat);
-                                return [lng, lat, alt];
-                            }).filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
-                            
-                            if (coordinates.length >= 3) {
-                                features.push({
-                                    type: 'Feature',
-                                    properties: { name, description },
-                                    geometry: {
-                                        type: 'Polygon',
-                                        coordinates: [coordinates]
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Handle Point
-                    const point = placemark.querySelector('Point');
-                    if (point) {
-                        const coordinatesText = point.querySelector('coordinates')?.textContent;
-                        if (coordinatesText) {
-                            const [lng, lat, alt = 0] = coordinatesText.trim().split(',').map(parseFloat);
-                            if (!isNaN(lng) && !isNaN(lat)) {
-                                features.push({
-                                    type: 'Feature',
-                                    properties: { name, description },
-                                    geometry: {
-                                        type: 'Point',
-                                        coordinates: [lng, lat, alt]
-                                    }
-                                });
-                            }
-                        }
-                    }
-                    
-                    // Handle LineString
-                    const lineString = placemark.querySelector('LineString');
-                    if (lineString) {
-                        const coordinatesText = lineString.querySelector('coordinates')?.textContent;
-                        if (coordinatesText) {
-                            const coordPairs = coordinatesText.trim().split(/\s+/);
-                            const coordinates = coordPairs.map(pair => {
-                                const [lng, lat, alt = 0] = pair.split(',').map(parseFloat);
-                                return [lng, lat, alt];
-                            }).filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
-                            
-                            if (coordinates.length >= 2) {
-                                features.push({
-                                    type: 'Feature',
-                                    properties: { name, description },
-                                    geometry: {
-                                        type: 'LineString',
-                                        coordinates: coordinates
-                                    }
-                                });
-                            }
-                        }
-                    }
+                return coords;
+            }
+
+            calculateCenter(coords) {
+                let totalLat = 0, totalLng = 0, totalAlt = 0;
+                coords.forEach(coord => {
+                    totalLat += coord.lat;
+                    totalLng += coord.lng;
+                    totalAlt += coord.alt;
                 });
                 
                 return {
-                    type: 'FeatureCollection',
-                    features: features
+                    lat: totalLat / coords.length,
+                    lng: totalLng / coords.length,
+                    alt: totalAlt / coords.length
                 };
             }
 
-            processFeatures(features) {
-                return features.map((feature, index) => {
-                    // Add unique ID
-                    feature.id = `feature-${Date.now()}-${index}`;
-                    
-                    // Ensure properties exist
-                    if (!feature.properties) {
-                        feature.properties = {};
-                    }
-
-                    // Set default name if missing
-                    if (!feature.properties.name) {
-                        feature.properties.name = `Στοιχείο ${index + 1}`;
-                    }
-
-                    // Set colors based on geometry type
-                    switch (feature.geometry.type) {
-                        case 'Point':
-                            feature.properties.color = '#ef4444'; // Red
-                            break;
-                        case 'LineString':
-                            feature.properties.color = '#3b82f6'; // Blue
-                            break;
-                        case 'Polygon':
-                            feature.properties.color = '#10b981'; // Green
-                            break;
-                        default:
-                            feature.properties.color = '#6366f1'; // Purple
-                    }
-
-                    return feature;
-                });
-            }
-
-            createAREntity(feature) {
+            createARObject(feature) {
                 const entity = document.createElement('a-entity');
-                entity.setAttribute('data-feature-id', feature.id);
-                entity.classList.add('ar-feature');
-
-                const coords = this.getFeatureCoordinates(feature);
-                if (!coords) {
-                    console.warn('No valid coordinates found for feature:', feature);
-                    return;
-                }
-
-                console.log(`Creating AR entity for ${feature.properties.name} at:`, coords);
-
-                // Υπολογισμός απόστασης από τον χρήστη
-                let distance = 'N/A';
-                if (this.userPosition) {
-                    distance = this.calculateDistance(
-                        this.userPosition.latitude, 
-                        this.userPosition.longitude,
-                        coords.lat, 
-                        coords.lng
-                    );
-                    console.log(`Distance to ${feature.properties.name}: ${distance}m`);
-                }
-
-                // Set GPS position
-                entity.setAttribute('gps-new-entity-place', {
-                    latitude: coords.lat,
-                    longitude: coords.lng,
-                    altitude: coords.alt || 0
-                });
-
-                // Create geometry based on type
-                switch (feature.geometry.type) {
-                    case 'Point':
-                        this.createPointGeometry(entity, feature);
-                        break;
-                    case 'LineString':
-                        this.createLineGeometry(entity, feature);
-                        break;
-                    case 'Polygon':
-                        this.createPolygonGeometry(entity, feature);
-                        break;
-                }
-
-                // Add enhanced label with distance
-                const labelContainer = document.createElement('a-entity');
-                labelContainer.setAttribute('position', '0 15 0');
+                entity.setAttribute('data-info', `${feature.name} (${feature.type})\n${feature.description}`);
                 
-                // Main label
-                const text = document.createElement('a-text');
-                text.setAttribute('value', `${feature.properties.name}\n${distance}m`);
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', '#ffffff');
-                text.setAttribute('scale', '20 20 20'); // Πολύ μεγαλύτερο
-                text.setAttribute('position', '0 0 0');
-                text.setAttribute('material', {
+                // Position using GPS
+                entity.setAttribute('gps-new-entity-place', {
+                    latitude: feature.center.lat,
+                    longitude: feature.center.lng,
+                    altitude: feature.center.alt
+                });
+                
+                // Create visual based on type
+                if (feature.type === 'Polygon') {
+                    // Large visible plane
+                    entity.setAttribute('geometry', {
+                        primitive: 'plane',
+                        width: 100,
+                        height: 100
+                    });
+                    entity.setAttribute('material', {
+                        color: '#10b981',
+                        transparent: true,
+                        opacity: 0.6,
+                        side: 'double'
+                    });
+                    entity.setAttribute('rotation', '-90 0 0');
+                    
+                    // Animated border
+                    const border = document.createElement('a-entity');
+                    border.setAttribute('geometry', {
+                        primitive: 'torus',
+                        radius: 55,
+                        radiusTubular: 3
+                    });
+                    border.setAttribute('material', {
+                        color: '#ffffff',
+                        emissive: '#ffffff'
+                    });
+                    border.setAttribute('rotation', '-90 0 0');
+                    border.setAttribute('animation', {
+                        property: 'rotation',
+                        to: '-90 360 0',
+                        dur: 8000,
+                        loop: true
+                    });
+                    entity.appendChild(border);
+                    
+                } else if (feature.type === 'Point') {
+                    // Large sphere
+                    entity.setAttribute('geometry', {
+                        primitive: 'sphere',
+                        radius: 20
+                    });
+                    entity.setAttribute('material', {
+                        color: '#ef4444',
+                        emissive: '#ef4444',
+                        emissiveIntensity: 0.3
+                    });
+                    entity.setAttribute('animation', {
+                        property: 'scale',
+                        to: '1.2 1.2 1.2',
+                        dur: 2000,
+                        dir: 'alternate',
+                        loop: true
+                    });
+                }
+                
+                // Add large label
+                const label = document.createElement('a-text');
+                label.setAttribute('value', feature.name);
+                label.setAttribute('position', '0 25 0');
+                label.setAttribute('align', 'center');
+                label.setAttribute('color', '#ffffff');
+                label.setAttribute('scale', '20 20 20');
+                label.setAttribute('material', {
                     color: '#ffffff',
                     transparent: true,
-                    opacity: 0.9
+                    opacity: 1
                 });
+                entity.appendChild(label);
                 
-                // Background για το text
-                const textBg = document.createElement('a-entity');
-                textBg.setAttribute('geometry', {
-                    primitive: 'plane',
-                    width: 30,
-                    height: 10
-                });
-                textBg.setAttribute('material', {
-                    color: '#000000',
-                    transparent: true,
-                    opacity: 0.7
-                });
-                textBg.setAttribute('position', '0 0 -1');
+                // Calculate distance if GPS available
+                if (this.userPosition) {
+                    const distance = this.calculateDistance(
+                        this.userPosition.lat, this.userPosition.lng,
+                        feature.center.lat, feature.center.lng
+                    );
+                    
+                    const distLabel = document.createElement('a-text');
+                    distLabel.setAttribute('value', `${distance}m`);
+                    distLabel.setAttribute('position', '0 15 0');
+                    distLabel.setAttribute('align', 'center');
+                    distLabel.setAttribute('color', '#ffff00');
+                    distLabel.setAttribute('scale', '15 15 15');
+                    entity.appendChild(distLabel);
+                    
+                    console.log(`📏 ${feature.name}: ${distance}m away`);
+                }
                 
-                labelContainer.appendChild(textBg);
-                labelContainer.appendChild(text);
-                entity.appendChild(labelContainer);
-
-                // Προσθήκη directional arrow που δείχνει προς τον χρήστη
-                const arrow = document.createElement('a-entity');
-                arrow.setAttribute('geometry', {
-                    primitive: 'cone',
-                    height: 20,
-                    radiusBottom: 5
-                });
-                arrow.setAttribute('material', {
-                    color: '#ffff00',
-                    emissive: '#ffff00',
-                    emissiveIntensity: 0.5
-                });
-                arrow.setAttribute('position', '0 25 0');
-                arrow.setAttribute('animation', {
-                    property: 'position',
-                    to: '0 30 0',
-                    dur: 1000,
-                    dir: 'alternate',
-                    loop: true
-                });
-                entity.appendChild(arrow);
-
-                this.container.appendChild(entity);
-                
-                // Ενημέρωση info panel με την απόσταση
-                this.showInfo(`✅ Προστέθηκε: ${feature.properties.name} (${distance}m από εσάς)`);
+                this.content.appendChild(entity);
             }
 
-            calculateDistance(lat1, lon1, lat2, lon2) {
-                const R = 6371e3; // Earth radius in meters
+            createTestObjects() {
+                this.clearAll();
+                
+                // Create test objects at fixed positions in front of camera
+                const positions = [
+                    { x: 0, y: 0, z: -50 },    // Straight ahead
+                    { x: -30, y: 0, z: -40 },  // Left
+                    { x: 30, y: 0, z: -40 },   // Right
+                    { x: 0, y: 20, z: -30 }    // Above
+                ];
+                
+                const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00'];
+                const names = ['ΜΠΡΟΣΤΑ', 'ΑΡΙΣΤΕΡΑ', 'ΔΕΞΙΑ', 'ΠΑΝΩ'];
+                
+                positions.forEach((pos, i) => {
+                    const entity = document.createElement('a-entity');
+                    entity.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
+                    entity.setAttribute('data-info', `Test Object ${i + 1}: ${names[i]}`);
+                    
+                    // Large box
+                    entity.setAttribute('geometry', {
+                        primitive: 'box',
+                        width: 15,
+                        height: 15,
+                        depth: 15
+                    });
+                    entity.setAttribute('material', {
+                        color: colors[i],
+                        emissive: colors[i],
+                        emissiveIntensity: 0.4
+                    });
+                    
+                    // Animation
+                    entity.setAttribute('animation', {
+                        property: 'rotation',
+                        to: '360 360 0',
+                        dur: 4000,
+                        loop: true
+                    });
+                    
+                    // Label
+                    const label = document.createElement('a-text');
+                    label.setAttribute('value', names[i]);
+                    label.setAttribute('position', '0 10 0');
+                    label.setAttribute('align', 'center');
+                    label.setAttribute('color', '#ffffff');
+                    label.setAttribute('scale', '10 10 10');
+                    entity.appendChild(label);
+                    
+                    this.content.appendChild(entity);
+                });
+                
+                this.updateStatus('files', true, 'Αρχεία: 4 δοκιμής');
+                this.showInfo('🎯 Δημιουργήθηκαν 4 test objects! Κοιτάξτε γύρω σας - μπροστά, αριστερά, δεξιά, πάνω');
+            }
+
+            calculateDistance(lat1, lng1, lat2, lng2) {
+                const R = 6371e3;
                 const φ1 = lat1 * Math.PI/180;
                 const φ2 = lat2 * Math.PI/180;
                 const Δφ = (lat2-lat1) * Math.PI/180;
-                const Δλ = (lon2-lon1) * Math.PI/180;
+                const Δλ = (lng2-lng1) * Math.PI/180;
 
                 const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
                         Math.cos(φ1) * Math.cos(φ2) *
                         Math.sin(Δλ/2) * Math.sin(Δλ/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-                return Math.round(R * c); // Distance in meters
-            }
-
-            getFeatureCoordinates(feature) {
-                const coords = feature.geometry.coordinates;
-                
-                switch (feature.geometry.type) {
-                    case 'Point':
-                        return { lng: coords[0], lat: coords[1], alt: coords[2] || 0 };
-                    case 'LineString':
-                        if (coords.length === 0) return null;
-                        // Use middle point
-                        const middleIndex = Math.floor(coords.length / 2);
-                        const middleCoord = coords[middleIndex];
-                        return { lng: middleCoord[0], lat: middleCoord[1], alt: middleCoord[2] || 0 };
-                    case 'Polygon':
-                        // Calculate centroid of the outer ring
-                        if (!coords[0] || coords[0].length === 0) return null;
-                        const ring = coords[0];
-                        let lat = 0, lng = 0, alt = 0;
-                        let validPoints = 0;
-                        
-                        ring.forEach(coord => {
-                            if (coord && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
-                                lng += coord[0];
-                                lat += coord[1];
-                                alt += coord[2] || 0;
-                                validPoints++;
-                            }
-                        });
-                        
-                        if (validPoints === 0) return null;
-                        
-                        return { 
-                            lng: lng / validPoints, 
-                            lat: lat / validPoints, 
-                            alt: alt / validPoints 
-                        };
-                    default:
-                        console.warn('Unknown geometry type:', feature.geometry.type);
-                        return null;
-                }
-            }
-
-            createPointGeometry(entity, feature) {
-                entity.setAttribute('geometry', {
-                    primitive: 'sphere',
-                    radius: 15 // Πολύ μεγαλύτερο
-                });
-                entity.setAttribute('material', {
-                    color: feature.properties.color,
-                    transparent: false,
-                    emissive: feature.properties.color, // Φωτεινό
-                    emissiveIntensity: 0.3
-                });
-                
-                // Προσθήκη animation για να φαίνεται
-                entity.setAttribute('animation', {
-                    property: 'scale',
-                    to: '1.5 1.5 1.5',
-                    dur: 2000,
-                    dir: 'alternate',
-                    loop: true
-                });
-            }
-
-            createLineGeometry(entity, feature) {
-                entity.setAttribute('geometry', {
-                    primitive: 'cylinder',
-                    radius: 5, // Πολύ πιο χοντρό
-                    height: 50 // Πολύ πιο ψηλό
-                });
-                entity.setAttribute('material', {
-                    color: feature.properties.color,
-                    transparent: false,
-                    emissive: feature.properties.color,
-                    emissiveIntensity: 0.4
-                });
-                
-                entity.setAttribute('animation', {
-                    property: 'rotation',
-                    to: '0 360 0',
-                    dur: 4000,
-                    loop: true
-                });
-            }
-
-            createPolygonGeometry(entity, feature) {
-                // Μεγάλο ορατό πολύγωνο
-                entity.setAttribute('geometry', {
-                    primitive: 'plane',
-                    width: 100, // Πολύ μεγαλύτερο
-                    height: 100
-                });
-                entity.setAttribute('material', {
-                    color: feature.properties.color,
-                    transparent: true,
-                    opacity: 0.6, // Πιο ορατό
-                    emissive: feature.properties.color,
-                    emissiveIntensity: 0.2,
-                    side: 'double'
-                });
-                entity.setAttribute('rotation', '-90 0 0'); // Στο έδαφος
-                
-                // Animation για καλύτερη ορατότητα
-                entity.setAttribute('animation', {
-                    property: 'material.opacity',
-                    to: '0.8',
-                    dur: 1500,
-                    dir: 'alternate',
-                    loop: true
-                });
-                
-                // Προσθήκη border για το polygon
-                const border = document.createElement('a-entity');
-                border.setAttribute('geometry', {
-                    primitive: 'torus',
-                    radius: 55,
-                    radiusTubular: 2
-                });
-                border.setAttribute('material', {
-                    color: '#ffffff',
-                    emissive: '#ffffff',
-                    emissiveIntensity: 0.5
-                });
-                border.setAttribute('rotation', '-90 0 0');
-                border.setAttribute('animation', {
-                    property: 'rotation',
-                    to: '-90 360 0',
-                    dur: 8000,
-                    loop: true
-                });
-                entity.appendChild(border);
+                return Math.round(R * c);
             }
 
             clearAll() {
-                // Clear AR entities
-                while (this.container.firstChild) {
-                    this.container.removeChild(this.container.firstChild);
+                while (this.content.firstChild) {
+                    this.content.removeChild(this.content.firstChild);
                 }
-                
-                // Reset state
-                this.loadedFeatures = [];
+                this.features = [];
                 this.updateStatus('files', false, 'Αρχεία: 0');
-                this.showInfo('Όλα τα στοιχεία καθαρίστηκαν');
-                
-                // Clear file input
-                document.getElementById('kml-input').value = '';
-            }
-
-            addTestMarker() {
-                // Προσθέτουμε έναν test marker 50 μέτρα μπροστά από τον χρήστη
-                setTimeout(() => {
-                    if (this.userPosition) {
-                        // Υπολογισμός θέσης 50m βόρεια από τον χρήστη
-                        const offsetLat = this.userPosition.latitude + 0.00045; // ~50m north
-                        
-                        const testEntity = document.createElement('a-entity');
-                        testEntity.setAttribute('gps-new-entity-place', {
-                            latitude: offsetLat,
-                            longitude: this.userPosition.longitude,
-                            altitude: this.userPosition.altitude + 2
-                        });
-                        
-                        // Μεγάλο κόκκινο κύβο για δοκιμή
-                        testEntity.setAttribute('geometry', {
-                            primitive: 'box',
-                            width: 20,
-                            height: 20,
-                            depth: 20
-                        });
-                        testEntity.setAttribute('material', {
-                            color: '#ff0000',
-                            emissive: '#ff0000',
-                            emissiveIntensity: 0.5
-                        });
-                        
-                        // Animation
-                        testEntity.setAttribute('animation', {
-                            property: 'rotation',
-                            to: '360 360 0',
-                            dur: 4000,
-                            loop: true
-                        });
-                        
-                        // Label
-                        const testLabel = document.createElement('a-text');
-                        testLabel.setAttribute('value', 'TEST MARKER\n50m NORTH');
-                        testLabel.setAttribute('position', '0 15 0');
-                        testLabel.setAttribute('align', 'center');
-                        testLabel.setAttribute('color', '#ffffff');
-                        testLabel.setAttribute('scale', '15 15 15');
-                        testEntity.appendChild(testLabel);
-                        
-                        this.container.appendChild(testEntity);
-                        console.log('Test marker added at:', offsetLat, this.userPosition.longitude);
-                        this.showInfo('🔴 Test marker προστέθηκε 50m βόρεια από εσάς!');
-                    }
-                }, 3000); // 3 δευτερόλεπτα μετά το GPS lock
-            }
-
-            showFeatureInfo(featureId) {
-                const feature = this.loadedFeatures.find(f => f.id === featureId);
-                if (!feature) return;
-
-                const coords = this.getFeatureCoordinates(feature);
-                let distance = 'N/A';
-                if (this.userPosition && coords) {
-                    distance = this.calculateDistance(
-                        this.userPosition.latitude, 
-                        this.userPosition.longitude,
-                        coords.lat, 
-                        coords.lng
-                    );
-                }
-
-                const info = `
-                    <strong>${feature.properties.name}</strong><br>
-                    Τύπος: ${feature.geometry.type}<br>
-                    Απόσταση: ${distance}m<br>
-                    ${feature.properties.description || ''}
-                `;
-                
-                this.showInfo(info);
-            }
-
-            showCurrentLocation() {
-                if (this.userPosition) {
-                    const locationInfo = `
-                        <strong>📍 Η Θέση σας:</strong><br>
-                        Γ.Π.: ${this.userPosition.latitude.toFixed(6)}°<br>
-                        Γ.Μ.: ${this.userPosition.longitude.toFixed(6)}°<br>
-                        Ακρίβεια: ±${Math.round(this.userPosition.accuracy)}m<br><br>
-                        <strong>🎯 Στόχος (Θέρμη):</strong><br>
-                        Γ.Π.: 40.544953°<br>
-                        Γ.Μ.: 23.013282°<br><br>
-                        Απόσταση: ${this.calculateDistance(
-                            this.userPosition.latitude,
-                            this.userPosition.longitude,
-                            40.544953,
-                            23.013282
-                        )}m
-                    `;
-                    this.showInfo(locationInfo);
-                } else {
-                    this.showInfo('Αναμονή GPS...');
-                }
+                this.showInfo('🗑️ Όλα καθαρίστηκαν');
             }
 
             updateStatus(type, active, text) {
-                const indicator = document.getElementById(`${type}-indicator`);
-                const status = document.getElementById(`${type}-status`);
+                const dot = document.getElementById(`${type}-dot`);
+                const textEl = document.getElementById(`${type}-text`);
                 
                 if (active) {
-                    indicator.classList.add('active');
+                    dot.classList.add('active');
                 } else {
-                    indicator.classList.remove('active');
+                    dot.classList.remove('active');
                 }
                 
-                status.textContent = text;
+                textEl.textContent = text;
             }
 
             showInfo(message) {
-                const panel = document.getElementById('info-panel');
-                const content = document.getElementById('info-content');
-                content.innerHTML = message;
-                panel.classList.add('show');
-                
-                // Auto hide after 5 seconds
-                setTimeout(() => {
-                    panel.classList.remove('show');
-                }, 5000);
-            }
-
-            showError(message) {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-message';
-                errorDiv.textContent = message;
-                document.body.appendChild(errorDiv);
+                const info = document.getElementById('info');
+                info.innerHTML = message;
+                info.classList.add('show');
                 
                 setTimeout(() => {
-                    if (errorDiv.parentNode) {
-                        errorDiv.parentNode.removeChild(errorDiv);
-                    }
-                }, 4000);
+                    info.classList.remove('show');
+                }, 8000);
             }
 
             showLoading(show) {
-                const loading = document.getElementById('loading');
-                loading.style.display = show ? 'block' : 'none';
+                document.getElementById('loading').style.display = show ? 'block' : 'none';
             }
         }
 
-        // Initialize app when DOM is ready
+        // Initialize when ready
         document.addEventListener('DOMContentLoaded', () => {
             new MapLensAR();
         });
-
-        // Handle device orientation for iOS
-        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission();
-        }
     </script>
 </body>
 </html>
