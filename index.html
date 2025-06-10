@@ -532,6 +532,8 @@
                     reader.onload = (e) => {
                         try {
                             const kmlString = e.target.result;
+                            console.log('KML Content:', kmlString.substring(0, 500) + '...');
+                            
                             const parser = new DOMParser();
                             const kmlDoc = parser.parseFromString(kmlString, 'text/xml');
                             
@@ -541,17 +543,26 @@
                                 throw new Error('Μη έγκυρο XML');
                             }
 
-                            // Convert to GeoJSON
+                            // Convert to GeoJSON - with better error handling
                             let geoJson;
-                            if (typeof toGeoJSON !== 'undefined') {
-                                geoJson = toGeoJSON.kml(kmlDoc);
-                            } else {
-                                throw new Error('toGeoJSON library not loaded');
+                            try {
+                                if (typeof toGeoJSON !== 'undefined' && toGeoJSON.kml) {
+                                    geoJson = toGeoJSON.kml(kmlDoc);
+                                    console.log('Converted GeoJSON:', geoJson);
+                                } else {
+                                    // Fallback to manual parsing
+                                    geoJson = this.parseKMLManually(kmlDoc);
+                                }
+                            } catch (conversionError) {
+                                console.error('toGeoJSON failed, trying manual parsing:', conversionError);
+                                geoJson = this.parseKMLManually(kmlDoc);
                             }
 
                             if (!geoJson || !geoJson.features || geoJson.features.length === 0) {
-                                throw new Error('Δεν βρέθηκαν γεωγραφικά στοιχεία');
+                                throw new Error('Δεν βρέθηκαν γεωγραφικά στοιχεία στο αρχείο');
                             }
+
+                            console.log(`Found ${geoJson.features.length} features`);
 
                             // Process features
                             const processedFeatures = this.processFeatures(geoJson.features);
@@ -565,13 +576,98 @@
                             resolve(processedFeatures);
 
                         } catch (error) {
-                            reject(new Error(`Parsing error: ${error.message}`));
+                            console.error('KML Loading Error:', error);
+                            reject(new Error(`Σφάλμα ανάλυσης: ${error.message}`));
                         }
                     };
 
                     reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης αρχείου'));
                     reader.readAsText(file);
                 });
+            }
+
+            parseKMLManually(kmlDoc) {
+                const features = [];
+                const placemarks = kmlDoc.querySelectorAll('Placemark');
+                
+                console.log(`Found ${placemarks.length} placemarks`);
+                
+                placemarks.forEach((placemark, index) => {
+                    const name = placemark.querySelector('name')?.textContent || `Στοιχείο ${index + 1}`;
+                    const description = placemark.querySelector('description')?.textContent || '';
+                    
+                    // Handle Polygon
+                    const polygon = placemark.querySelector('Polygon');
+                    if (polygon) {
+                        const coordinatesText = polygon.querySelector('outerBoundaryIs LinearRing coordinates')?.textContent;
+                        if (coordinatesText) {
+                            const coordPairs = coordinatesText.trim().split(/\s+/);
+                            const coordinates = coordPairs.map(pair => {
+                                const [lng, lat, alt = 0] = pair.split(',').map(parseFloat);
+                                return [lng, lat, alt];
+                            }).filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
+                            
+                            if (coordinates.length >= 3) {
+                                features.push({
+                                    type: 'Feature',
+                                    properties: { name, description },
+                                    geometry: {
+                                        type: 'Polygon',
+                                        coordinates: [coordinates]
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Handle Point
+                    const point = placemark.querySelector('Point');
+                    if (point) {
+                        const coordinatesText = point.querySelector('coordinates')?.textContent;
+                        if (coordinatesText) {
+                            const [lng, lat, alt = 0] = coordinatesText.trim().split(',').map(parseFloat);
+                            if (!isNaN(lng) && !isNaN(lat)) {
+                                features.push({
+                                    type: 'Feature',
+                                    properties: { name, description },
+                                    geometry: {
+                                        type: 'Point',
+                                        coordinates: [lng, lat, alt]
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Handle LineString
+                    const lineString = placemark.querySelector('LineString');
+                    if (lineString) {
+                        const coordinatesText = lineString.querySelector('coordinates')?.textContent;
+                        if (coordinatesText) {
+                            const coordPairs = coordinatesText.trim().split(/\s+/);
+                            const coordinates = coordPairs.map(pair => {
+                                const [lng, lat, alt = 0] = pair.split(',').map(parseFloat);
+                                return [lng, lat, alt];
+                            }).filter(coord => !isNaN(coord[0]) && !isNaN(coord[1]));
+                            
+                            if (coordinates.length >= 2) {
+                                features.push({
+                                    type: 'Feature',
+                                    properties: { name, description },
+                                    geometry: {
+                                        type: 'LineString',
+                                        coordinates: coordinates
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                return {
+                    type: 'FeatureCollection',
+                    features: features
+                };
             }
 
             processFeatures(features) {
@@ -658,21 +754,38 @@
                 
                 switch (feature.geometry.type) {
                     case 'Point':
-                        return { lng: coords[0], lat: coords[1], alt: coords[2] };
+                        return { lng: coords[0], lat: coords[1], alt: coords[2] || 0 };
                     case 'LineString':
+                        if (coords.length === 0) return null;
                         // Use middle point
                         const middleIndex = Math.floor(coords.length / 2);
-                        return { lng: coords[middleIndex][0], lat: coords[middleIndex][1], alt: coords[middleIndex][2] };
+                        const middleCoord = coords[middleIndex];
+                        return { lng: middleCoord[0], lat: middleCoord[1], alt: middleCoord[2] || 0 };
                     case 'Polygon':
-                        // Calculate centroid
+                        // Calculate centroid of the outer ring
+                        if (!coords[0] || coords[0].length === 0) return null;
                         const ring = coords[0];
-                        let lat = 0, lng = 0;
+                        let lat = 0, lng = 0, alt = 0;
+                        let validPoints = 0;
+                        
                         ring.forEach(coord => {
-                            lng += coord[0];
-                            lat += coord[1];
+                            if (coord && coord.length >= 2 && !isNaN(coord[0]) && !isNaN(coord[1])) {
+                                lng += coord[0];
+                                lat += coord[1];
+                                alt += coord[2] || 0;
+                                validPoints++;
+                            }
                         });
-                        return { lng: lng / ring.length, lat: lat / ring.length, alt: 0 };
+                        
+                        if (validPoints === 0) return null;
+                        
+                        return { 
+                            lng: lng / validPoints, 
+                            lat: lat / validPoints, 
+                            alt: alt / validPoints 
+                        };
                     default:
+                        console.warn('Unknown geometry type:', feature.geometry.type);
                         return null;
                 }
             }
