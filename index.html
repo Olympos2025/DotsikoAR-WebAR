@@ -1,143 +1,801 @@
 <!DOCTYPE html>
 <html lang="el">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>MapLens WebAR</title>
-  <!-- Φόρτωση A-Frame και AR.js (location-based) βιβλιοθηκών -->
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
-  <style>
-    /* Βασικές μορφοποιήσεις για πλήρη οθόνη και modal */
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-    #permission-modal {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      color: #fff;
-      display: none;                /* ξεκινά κρυφό, θα εμφανιστεί μόνο αν χρειάζεται */
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      z-index: 9999;
-    }
-    #permission-modal .modal-content {
-      max-width: 80%;
-      padding: 1em;
-    }
-    #permission-modal p {
-      font-size: 1.1em;
-      line-height: 1.4em;
-      margin-bottom: 1.2em;
-    }
-    #start-ar-btn {
-      font-size: 1.1em;
-      padding: 0.6em 1.2em;
-      background: #006dcf;
-      border: none;
-      border-radius: 4px;
-      color: #fff;
-    }
-    #start-ar-btn:active { background: #0053a0; }
-  </style>
-</head>
-<body>
-  <!-- Modal για αίτημα άδειας σε iOS Safari -->
-  <div id="permission-modal">
-    <div class="modal-content">
-      <p>Η εμπειρία AR χρειάζεται πρόσβαση στους αισθητήρες κίνησης της συσκευής (γυροσκόπιο/επιταχυνσιόμετρο). Πατήστε «Έναρξη AR» και επιτρέψτε την πρόσβαση για να συνεχίσετε.</p>
-      <button id="start-ar-btn">Έναρξη AR</button>
-    </div>
-  </div>
-
-  <script>
-    // Αυτοεκτελούμενη συνάρτηση για να μην μολύνουμε το global scope
-    (function() {
-      const modal = document.getElementById('permission-modal');
-      const startBtn = document.getElementById('start-ar-btn');
-
-      // Συνάρτηση έναρξης της AR σκηνής (κάμερα, GPS, φόρτωση KML)
-      function startAR() {
-        // Κλείσιμο modal (αν είναι ανοιχτό)
-        if (modal) {
-          modal.style.display = 'none';
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="author" content="Thomas G. Lagkas">
+    <meta name="email" content="thomas.lagkas@outlook.com">
+    <title>MapLens - WebAR KML Viewer</title>
+    
+    <!-- A-Frame και AR.js -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+    <script src="https://unpkg.com/@tmcw/togeojson@4.6.2"></script>
+    
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text: #ffffff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
-        // Δημιουργία A-Frame σκηνής με ενεργοποιημένο το AR.js (WebAR) 
-        const scene = document.createElement('a-scene');
-        scene.setAttribute('vr-mode-ui', 'enabled: false');
-        scene.setAttribute('arjs', 'sourceType: webcam; videoTexture: true; debugUIEnabled: false');
-        scene.setAttribute('renderer', 'antialias: true; alpha: true');
+        * {
+            box-sizing: border-box;
+        }
 
-        // Προσθήκη κάμερας με GPS/Orientation εντοπισμό (AR.js component)
-        const camera = document.createElement('a-camera');
-        camera.setAttribute('gps-new-camera', 'gpsMinDistance: 5');
-        scene.appendChild(camera);
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text);
+            overflow: hidden;
+            user-select: none;
+        }
 
-        // (Προαιρετικά: εδώ μπορούν να προστεθούν κουμπιά ή άλλα στοιχεία UI πάνω από το AR, εάν χρειάζεται)
+        /* Header */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
 
-        // Προσθήκη της σκηνής στο DOM (ξεκινά η κάμερα & GPS)
-        document.body.appendChild(scene);
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
-        // Φόρτωση σημείων από αρχείο KML
-        fetch('points.kml')
-          .then(response => response.text())
-          .then(kmlText => {
-            const parser = new DOMParser();
-            const kmlDoc = parser.parseFromString(kmlText, 'text/xml');
-            const placemarks = kmlDoc.getElementsByTagName('Placemark');
-            for (let i = 0; i < placemarks.length; i++) {
-              const pm = placemarks[i];
-              const nameEl = pm.getElementsByTagName('name')[0];
-              const coordsEl = pm.getElementsByTagName('coordinates')[0];
-              if (!coordsEl) continue;
-              const coords = coordsEl.textContent.trim();
-              if (coords) {
-                // Το format είναι "μήκος,πλάτος,ύψος"
-                const [lon, lat] = coords.split(',').map(parseFloat);
-                // Δημιουργία οντότητας κειμένου στο AR στο συγκεκριμένο σημείο
-                const textEntity = document.createElement('a-entity');
-                textEntity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lon}`);
-                textEntity.setAttribute('text', `value: ${nameEl ? nameEl.textContent : 'Σημείο'}; color: #ffff00; align: center; width: 20;`);
-                textEntity.setAttribute('look-at', '[gps-new-camera]');   // ώστε να βλέπει πάντα προς τον χρήστη
-                textEntity.setAttribute('scale', '20 20 20');             // αυξάνουμε το μέγεθος για να είναι ορατό
-                scene.appendChild(textEntity);
-              }
+        /* Controls Panel */
+        .controls-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, var(--danger), #dc2626);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+            width: 0.1px;
+            height: 0.1px;
+        }
+
+        /* Status Panel */
+        .status-panel {
+            position: fixed;
+            top: 140px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 998;
+        }
+
+        .status-item {
+            padding: 8px 12px;
+            border-radius: 20px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 120px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background: var(--secondary);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 16px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 997;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .info-panel.show {
+            transform: translateY(0);
+        }
+
+        .info-content {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 996;
+            display: none;
+        }
+
+        .loading-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .loading-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: loading 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loading {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* AR Scene */
+        a-scene {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 0 !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .controls-panel {
+                flex-wrap: wrap;
             }
-          })
-          .catch(err => {
-            console.error('Σφάλμα φόρτωσης KML:', err);
-          });
-      }
-
-      // Έλεγχος αν απαιτείται άδεια DeviceOrientation (iOS 13+)
-      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        // Σε iOS Safari χρειάζεται άδεια χρήσης αισθητήρων κίνησης
-        modal.style.display = 'flex';
-        startBtn.addEventListener('click', function() {
-          // Με το πάτημα του κουμπιού, ζητάμε άδεια για DeviceOrientation
-          DeviceOrientationEvent.requestPermission().then(response => {
-            if (response === 'granted') {
-              // Ο χρήστης επέτρεψε - εκκίνηση AR
-              startAR();
-            } else {
-              // Ο χρήστης πάτησε "Μη Επίτρεψη" (ή δεν έδωσε άδεια)
-              alert('Δεν δόθηκε άδεια πρόσβασης στους αισθητήρες κίνησης - η λειτουργία AR ενδέχεται να μην λειτουργεί σωστά.');
-              startAR();
+            
+            .btn {
+                padding: 10px 16px;
+                font-size: 13px;
             }
-          }).catch(error => {
-            // Σε περίπτωση σφάλματος ή μη υποστήριξης
-            alert('Δεν είναι δυνατή η πρόσβαση στους αισθητήρες κίνησης (σφάλμα ή μη υποστηριζόμενη συσκευή).');
-            startAR();
-            console.error('Sensor permission error:', error);
-          });
+            
+            .status-panel {
+                right: 10px;
+                top: 120px;
+            }
+        }
+
+        /* Error Messages */
+        .error-message {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--danger);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1001;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="app-header">
+        <h1 class="app-title">MapLens</h1>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-panel">
+        <div class="file-input-wrapper">
+            <input type="file" id="kml-input" class="file-input" accept=".kml" multiple>
+            <label for="kml-input" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17,8 12,3 7,8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Φόρτωση KML
+            </label>
+        </div>
+        
+        <button id="clear-btn" class="btn btn-danger">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18l-2 13H5L3 6z"></path>
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Καθαρισμός
+        </button>
+        
+        <button id="refresh-btn" class="btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+            Ανανέωση
+        </button>
+    </div>
+
+    <!-- Status -->
+    <div class="status-panel">
+        <div class="status-item">
+            <span class="status-indicator" id="camera-indicator"></span>
+            <span id="camera-status">Κάμερα: Αναμονή</span>
+        </div>
+        <div class="status-item">
+            <span class="status-indicator" id="gps-indicator"></span>
+            <span id="gps-status">GPS: Αναμονή</span>
+        </div>
+        <div class="status-item">
+            <span class="status-indicator" id="files-indicator"></span>
+            <span id="files-status">Αρχεία: 0</span>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="info-panel">
+        <div class="info-content" id="info-content">
+            Φορτώστε ένα KML αρχείο για να ξεκινήσετε. 
+            Βεβαιωθείτε ότι έχετε επιτρέψει την πρόσβαση στην κάμερα και την τοποθεσία.
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+
+    <!-- AR Scene -->
+    <a-scene
+        id="ar-scene"
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; sortObjects: true;"
+        embedded
+        style="height: 100vh; width: 100vw;">
+        
+        <a-camera 
+            id="ar-camera"
+            gps-new-camera="gpsMinDistance: 5; gpsMaxDistance: 20000; positionMinAccuracy: 100; alert: false;"
+            rotation-reader
+            look-controls="enabled: false"
+            wasd-controls="enabled: false"
+            cursor="rayOrigin: mouse">
+        </a-camera>
+        
+        <a-entity id="ar-container"></a-entity>
+    </a-scene>
+
+    <script>
+        class MapLensAR {
+            constructor() {
+                this.scene = document.getElementById('ar-scene');
+                this.camera = document.getElementById('ar-camera');
+                this.container = document.getElementById('ar-container');
+                this.loadedFeatures = [];
+                this.userPosition = null;
+                
+                this.initializeApp();
+            }
+
+            async initializeApp() {
+                console.log('MapLens: Initializing...');
+                this.showInfo('Αρχικοποίηση εφαρμογής...');
+                
+                // Wait for scene to load
+                await this.waitForSceneLoad();
+                
+                // Initialize event listeners
+                this.initEventListeners();
+                
+                // Initialize GPS
+                this.initGPS();
+                
+                // Initialize camera
+                this.initCamera();
+                
+                console.log('MapLens: Ready!');
+                this.showInfo('Εφαρμογή έτοιμη! Φορτώστε ένα KML αρχείο.');
+            }
+
+            waitForSceneLoad() {
+                return new Promise((resolve) => {
+                    if (this.scene.hasLoaded) {
+                        resolve();
+                    } else {
+                        this.scene.addEventListener('loaded', resolve);
+                    }
+                });
+            }
+
+            initEventListeners() {
+                // File input
+                document.getElementById('kml-input').addEventListener('change', (e) => {
+                    const files = Array.from(e.target.files);
+                    if (files.length > 0) {
+                        this.loadKMLFiles(files);
+                    }
+                });
+
+                // Clear button
+                document.getElementById('clear-btn').addEventListener('click', () => {
+                    this.clearAll();
+                });
+
+                // Refresh button
+                document.getElementById('refresh-btn').addEventListener('click', () => {
+                    location.reload();
+                });
+
+                // Scene click events
+                this.scene.addEventListener('click', (e) => {
+                    const entity = e.detail.intersection?.el;
+                    if (entity && entity.dataset.featureId) {
+                        this.showFeatureInfo(entity.dataset.featureId);
+                    }
+                });
+            }
+
+            initGPS() {
+                if (!navigator.geolocation) {
+                    this.showError('GPS δεν υποστηρίζεται σε αυτή τη συσκευή');
+                    return;
+                }
+
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                };
+
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        this.userPosition = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                            altitude: position.coords.altitude || 0,
+                            accuracy: position.coords.accuracy
+                        };
+
+                        this.updateStatus('gps', true, `GPS: Ενεργό (±${Math.round(position.coords.accuracy)}m)`);
+                        console.log('GPS Position:', this.userPosition);
+                    },
+                    (error) => {
+                        this.updateStatus('gps', false, 'GPS: Σφάλμα');
+                        console.error('GPS Error:', error);
+                        
+                        if (error.code === error.PERMISSION_DENIED) {
+                            this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στην τοποθεσία');
+                        }
+                    },
+                    options
+                );
+            }
+
+            initCamera() {
+                // Check camera access
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ video: true })
+                        .then((stream) => {
+                            this.updateStatus('camera', true, 'Κάμερα: Ενεργή');
+                            // Stop the stream immediately, AR.js will handle it
+                            stream.getTracks().forEach(track => track.stop());
+                        })
+                        .catch((error) => {
+                            this.updateStatus('camera', false, 'Κάμερα: Σφάλμα');
+                            console.error('Camera Error:', error);
+                            this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στην κάμερα');
+                        });
+                } else {
+                    this.showError('Κάμερα δεν υποστηρίζεται σε αυτό το περιβάλλον');
+                }
+            }
+
+            async loadKMLFiles(files) {
+                this.showLoading(true);
+                this.showInfo('Φόρτωση αρχείων...');
+
+                let totalFeatures = 0;
+
+                for (const file of files) {
+                    try {
+                        const features = await this.loadKML(file);
+                        totalFeatures += features.length;
+                        console.log(`Loaded ${features.length} features from ${file.name}`);
+                    } catch (error) {
+                        console.error(`Error loading ${file.name}:`, error);
+                        this.showError(`Σφάλμα στο αρχείο ${file.name}: ${error.message}`);
+                    }
+                }
+
+                this.updateStatus('files', totalFeatures > 0, `Αρχεία: ${totalFeatures} στοιχεία`);
+                this.showLoading(false);
+                
+                if (totalFeatures > 0) {
+                    this.showInfo(`Φορτώθηκαν επιτυχώς ${totalFeatures} στοιχεία! Στρέψτε την κάμερα προς την περιοχή.`);
+                } else {
+                    this.showError('Δεν βρέθηκαν έγκυρα στοιχεία στα αρχεία KML');
+                }
+            }
+
+            loadKML(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = (e) => {
+                        try {
+                            const kmlString = e.target.result;
+                            const parser = new DOMParser();
+                            const kmlDoc = parser.parseFromString(kmlString, 'text/xml');
+                            
+                            // Check for parsing errors
+                            const parseError = kmlDoc.querySelector('parsererror');
+                            if (parseError) {
+                                throw new Error('Μη έγκυρο XML');
+                            }
+
+                            // Convert to GeoJSON
+                            let geoJson;
+                            if (typeof toGeoJSON !== 'undefined') {
+                                geoJson = toGeoJSON.kml(kmlDoc);
+                            } else {
+                                throw new Error('toGeoJSON library not loaded');
+                            }
+
+                            if (!geoJson || !geoJson.features || geoJson.features.length === 0) {
+                                throw new Error('Δεν βρέθηκαν γεωγραφικά στοιχεία');
+                            }
+
+                            // Process features
+                            const processedFeatures = this.processFeatures(geoJson.features);
+                            
+                            // Create AR entities
+                            processedFeatures.forEach(feature => {
+                                this.createAREntity(feature);
+                            });
+
+                            this.loadedFeatures.push(...processedFeatures);
+                            resolve(processedFeatures);
+
+                        } catch (error) {
+                            reject(new Error(`Parsing error: ${error.message}`));
+                        }
+                    };
+
+                    reader.onerror = () => reject(new Error('Σφάλμα ανάγνωσης αρχείου'));
+                    reader.readAsText(file);
+                });
+            }
+
+            processFeatures(features) {
+                return features.map((feature, index) => {
+                    // Add unique ID
+                    feature.id = `feature-${Date.now()}-${index}`;
+                    
+                    // Ensure properties exist
+                    if (!feature.properties) {
+                        feature.properties = {};
+                    }
+
+                    // Set default name if missing
+                    if (!feature.properties.name) {
+                        feature.properties.name = `Στοιχείο ${index + 1}`;
+                    }
+
+                    // Set colors based on geometry type
+                    switch (feature.geometry.type) {
+                        case 'Point':
+                            feature.properties.color = '#ef4444'; // Red
+                            break;
+                        case 'LineString':
+                            feature.properties.color = '#3b82f6'; // Blue
+                            break;
+                        case 'Polygon':
+                            feature.properties.color = '#10b981'; // Green
+                            break;
+                        default:
+                            feature.properties.color = '#6366f1'; // Purple
+                    }
+
+                    return feature;
+                });
+            }
+
+            createAREntity(feature) {
+                const entity = document.createElement('a-entity');
+                entity.setAttribute('data-feature-id', feature.id);
+                entity.classList.add('ar-feature');
+
+                const coords = this.getFeatureCoordinates(feature);
+                if (!coords) {
+                    console.warn('No valid coordinates found for feature:', feature);
+                    return;
+                }
+
+                // Set GPS position
+                entity.setAttribute('gps-new-entity-place', {
+                    latitude: coords.lat,
+                    longitude: coords.lng,
+                    altitude: coords.alt || 0
+                });
+
+                // Create geometry based on type
+                switch (feature.geometry.type) {
+                    case 'Point':
+                        this.createPointGeometry(entity, feature);
+                        break;
+                    case 'LineString':
+                        this.createLineGeometry(entity, feature);
+                        break;
+                    case 'Polygon':
+                        this.createPolygonGeometry(entity, feature);
+                        break;
+                }
+
+                // Add label
+                if (feature.properties.name) {
+                    const text = document.createElement('a-text');
+                    text.setAttribute('value', feature.properties.name);
+                    text.setAttribute('position', '0 5 0');
+                    text.setAttribute('align', 'center');
+                    text.setAttribute('color', '#ffffff');
+                    text.setAttribute('scale', '8 8 8');
+                    entity.appendChild(text);
+                }
+
+                this.container.appendChild(entity);
+            }
+
+            getFeatureCoordinates(feature) {
+                const coords = feature.geometry.coordinates;
+                
+                switch (feature.geometry.type) {
+                    case 'Point':
+                        return { lng: coords[0], lat: coords[1], alt: coords[2] };
+                    case 'LineString':
+                        // Use middle point
+                        const middleIndex = Math.floor(coords.length / 2);
+                        return { lng: coords[middleIndex][0], lat: coords[middleIndex][1], alt: coords[middleIndex][2] };
+                    case 'Polygon':
+                        // Calculate centroid
+                        const ring = coords[0];
+                        let lat = 0, lng = 0;
+                        ring.forEach(coord => {
+                            lng += coord[0];
+                            lat += coord[1];
+                        });
+                        return { lng: lng / ring.length, lat: lat / ring.length, alt: 0 };
+                    default:
+                        return null;
+                }
+            }
+
+            createPointGeometry(entity, feature) {
+                entity.setAttribute('geometry', {
+                    primitive: 'sphere',
+                    radius: 3
+                });
+                entity.setAttribute('material', {
+                    color: feature.properties.color,
+                    transparent: false
+                });
+            }
+
+            createLineGeometry(entity, feature) {
+                // For now, create a cylinder to represent the line
+                entity.setAttribute('geometry', {
+                    primitive: 'cylinder',
+                    radius: 1,
+                    height: 10
+                });
+                entity.setAttribute('material', {
+                    color: feature.properties.color,
+                    transparent: false
+                });
+            }
+
+            createPolygonGeometry(entity, feature) {
+                entity.setAttribute('geometry', {
+                    primitive: 'plane',
+                    width: 20,
+                    height: 20
+                });
+                entity.setAttribute('material', {
+                    color: feature.properties.color,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                entity.setAttribute('rotation', '-90 0 0'); // Lay flat on ground
+            }
+
+            clearAll() {
+                // Clear AR entities
+                while (this.container.firstChild) {
+                    this.container.removeChild(this.container.firstChild);
+                }
+                
+                // Reset state
+                this.loadedFeatures = [];
+                this.updateStatus('files', false, 'Αρχεία: 0');
+                this.showInfo('Όλα τα στοιχεία καθαρίστηκαν');
+                
+                // Clear file input
+                document.getElementById('kml-input').value = '';
+            }
+
+            showFeatureInfo(featureId) {
+                const feature = this.loadedFeatures.find(f => f.id === featureId);
+                if (!feature) return;
+
+                const info = `
+                    <strong>${feature.properties.name}</strong><br>
+                    Τύπος: ${feature.geometry.type}<br>
+                    ${feature.properties.description || ''}
+                `;
+                
+                this.showInfo(info);
+            }
+
+            updateStatus(type, active, text) {
+                const indicator = document.getElementById(`${type}-indicator`);
+                const status = document.getElementById(`${type}-status`);
+                
+                if (active) {
+                    indicator.classList.add('active');
+                } else {
+                    indicator.classList.remove('active');
+                }
+                
+                status.textContent = text;
+            }
+
+            showInfo(message) {
+                const panel = document.getElementById('info-panel');
+                const content = document.getElementById('info-content');
+                content.innerHTML = message;
+                panel.classList.add('show');
+                
+                // Auto hide after 5 seconds
+                setTimeout(() => {
+                    panel.classList.remove('show');
+                }, 5000);
+            }
+
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = message;
+                document.body.appendChild(errorDiv);
+                
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 4000);
+            }
+
+            showLoading(show) {
+                const loading = document.getElementById('loading');
+                loading.style.display = show ? 'block' : 'none';
+            }
+        }
+
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new MapLensAR();
         });
-      } else {
-        // Σε μη iOS συσκευές ή παλαιότερα iOS (ή ήδη έχει δοθεί άδεια), ξεκινάμε απευθείας
-        startAR();
-      }
-    })();
-  </script>
+
+        // Handle device orientation for iOS
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission();
+        }
+    </script>
 </body>
 </html>
