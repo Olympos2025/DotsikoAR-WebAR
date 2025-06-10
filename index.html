@@ -317,6 +317,14 @@
             </svg>
             Ανανέωση
         </button>
+        
+        <button id="location-btn" class="btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+            </svg>
+            Θέση
+        </button>
     </div>
 
     <!-- Status -->
@@ -401,6 +409,9 @@
                 // Initialize camera
                 this.initCamera();
                 
+                // Add test marker close to user
+                this.addTestMarker();
+                
                 console.log('MapLens: Ready!');
                 this.showInfo('Εφαρμογή έτοιμη! Φορτώστε ένα KML αρχείο.');
             }
@@ -432,6 +443,11 @@
                 // Refresh button
                 document.getElementById('refresh-btn').addEventListener('click', () => {
                     location.reload();
+                });
+                
+                // Location button
+                document.getElementById('location-btn').addEventListener('click', () => {
+                    this.showCurrentLocation();
                 });
 
                 // Scene click events
@@ -715,6 +731,20 @@
                     return;
                 }
 
+                console.log(`Creating AR entity for ${feature.properties.name} at:`, coords);
+
+                // Υπολογισμός απόστασης από τον χρήστη
+                let distance = 'N/A';
+                if (this.userPosition) {
+                    distance = this.calculateDistance(
+                        this.userPosition.latitude, 
+                        this.userPosition.longitude,
+                        coords.lat, 
+                        coords.lng
+                    );
+                    console.log(`Distance to ${feature.properties.name}: ${distance}m`);
+                }
+
                 // Set GPS position
                 entity.setAttribute('gps-new-entity-place', {
                     latitude: coords.lat,
@@ -735,18 +765,82 @@
                         break;
                 }
 
-                // Add label
-                if (feature.properties.name) {
-                    const text = document.createElement('a-text');
-                    text.setAttribute('value', feature.properties.name);
-                    text.setAttribute('position', '0 5 0');
-                    text.setAttribute('align', 'center');
-                    text.setAttribute('color', '#ffffff');
-                    text.setAttribute('scale', '8 8 8');
-                    entity.appendChild(text);
-                }
+                // Add enhanced label with distance
+                const labelContainer = document.createElement('a-entity');
+                labelContainer.setAttribute('position', '0 15 0');
+                
+                // Main label
+                const text = document.createElement('a-text');
+                text.setAttribute('value', `${feature.properties.name}\n${distance}m`);
+                text.setAttribute('align', 'center');
+                text.setAttribute('color', '#ffffff');
+                text.setAttribute('scale', '20 20 20'); // Πολύ μεγαλύτερο
+                text.setAttribute('position', '0 0 0');
+                text.setAttribute('material', {
+                    color: '#ffffff',
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                // Background για το text
+                const textBg = document.createElement('a-entity');
+                textBg.setAttribute('geometry', {
+                    primitive: 'plane',
+                    width: 30,
+                    height: 10
+                });
+                textBg.setAttribute('material', {
+                    color: '#000000',
+                    transparent: true,
+                    opacity: 0.7
+                });
+                textBg.setAttribute('position', '0 0 -1');
+                
+                labelContainer.appendChild(textBg);
+                labelContainer.appendChild(text);
+                entity.appendChild(labelContainer);
+
+                // Προσθήκη directional arrow που δείχνει προς τον χρήστη
+                const arrow = document.createElement('a-entity');
+                arrow.setAttribute('geometry', {
+                    primitive: 'cone',
+                    height: 20,
+                    radiusBottom: 5
+                });
+                arrow.setAttribute('material', {
+                    color: '#ffff00',
+                    emissive: '#ffff00',
+                    emissiveIntensity: 0.5
+                });
+                arrow.setAttribute('position', '0 25 0');
+                arrow.setAttribute('animation', {
+                    property: 'position',
+                    to: '0 30 0',
+                    dur: 1000,
+                    dir: 'alternate',
+                    loop: true
+                });
+                entity.appendChild(arrow);
 
                 this.container.appendChild(entity);
+                
+                // Ενημέρωση info panel με την απόσταση
+                this.showInfo(`✅ Προστέθηκε: ${feature.properties.name} (${distance}m από εσάς)`);
+            }
+
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371e3; // Earth radius in meters
+                const φ1 = lat1 * Math.PI/180;
+                const φ2 = lat2 * Math.PI/180;
+                const Δφ = (lat2-lat1) * Math.PI/180;
+                const Δλ = (lon2-lon1) * Math.PI/180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                return Math.round(R * c); // Distance in meters
             }
 
             getFeatureCoordinates(feature) {
@@ -793,39 +887,92 @@
             createPointGeometry(entity, feature) {
                 entity.setAttribute('geometry', {
                     primitive: 'sphere',
-                    radius: 3
+                    radius: 15 // Πολύ μεγαλύτερο
                 });
                 entity.setAttribute('material', {
                     color: feature.properties.color,
-                    transparent: false
+                    transparent: false,
+                    emissive: feature.properties.color, // Φωτεινό
+                    emissiveIntensity: 0.3
+                });
+                
+                // Προσθήκη animation για να φαίνεται
+                entity.setAttribute('animation', {
+                    property: 'scale',
+                    to: '1.5 1.5 1.5',
+                    dur: 2000,
+                    dir: 'alternate',
+                    loop: true
                 });
             }
 
             createLineGeometry(entity, feature) {
-                // For now, create a cylinder to represent the line
                 entity.setAttribute('geometry', {
                     primitive: 'cylinder',
-                    radius: 1,
-                    height: 10
+                    radius: 5, // Πολύ πιο χοντρό
+                    height: 50 // Πολύ πιο ψηλό
                 });
                 entity.setAttribute('material', {
                     color: feature.properties.color,
-                    transparent: false
+                    transparent: false,
+                    emissive: feature.properties.color,
+                    emissiveIntensity: 0.4
+                });
+                
+                entity.setAttribute('animation', {
+                    property: 'rotation',
+                    to: '0 360 0',
+                    dur: 4000,
+                    loop: true
                 });
             }
 
             createPolygonGeometry(entity, feature) {
+                // Μεγάλο ορατό πολύγωνο
                 entity.setAttribute('geometry', {
                     primitive: 'plane',
-                    width: 20,
-                    height: 20
+                    width: 100, // Πολύ μεγαλύτερο
+                    height: 100
                 });
                 entity.setAttribute('material', {
                     color: feature.properties.color,
                     transparent: true,
-                    opacity: 0.3
+                    opacity: 0.6, // Πιο ορατό
+                    emissive: feature.properties.color,
+                    emissiveIntensity: 0.2,
+                    side: 'double'
                 });
-                entity.setAttribute('rotation', '-90 0 0'); // Lay flat on ground
+                entity.setAttribute('rotation', '-90 0 0'); // Στο έδαφος
+                
+                // Animation για καλύτερη ορατότητα
+                entity.setAttribute('animation', {
+                    property: 'material.opacity',
+                    to: '0.8',
+                    dur: 1500,
+                    dir: 'alternate',
+                    loop: true
+                });
+                
+                // Προσθήκη border για το polygon
+                const border = document.createElement('a-entity');
+                border.setAttribute('geometry', {
+                    primitive: 'torus',
+                    radius: 55,
+                    radiusTubular: 2
+                });
+                border.setAttribute('material', {
+                    color: '#ffffff',
+                    emissive: '#ffffff',
+                    emissiveIntensity: 0.5
+                });
+                border.setAttribute('rotation', '-90 0 0');
+                border.setAttribute('animation', {
+                    property: 'rotation',
+                    to: '-90 360 0',
+                    dur: 8000,
+                    loop: true
+                });
+                entity.appendChild(border);
             }
 
             clearAll() {
@@ -843,17 +990,103 @@
                 document.getElementById('kml-input').value = '';
             }
 
+            addTestMarker() {
+                // Προσθέτουμε έναν test marker 50 μέτρα μπροστά από τον χρήστη
+                setTimeout(() => {
+                    if (this.userPosition) {
+                        // Υπολογισμός θέσης 50m βόρεια από τον χρήστη
+                        const offsetLat = this.userPosition.latitude + 0.00045; // ~50m north
+                        
+                        const testEntity = document.createElement('a-entity');
+                        testEntity.setAttribute('gps-new-entity-place', {
+                            latitude: offsetLat,
+                            longitude: this.userPosition.longitude,
+                            altitude: this.userPosition.altitude + 2
+                        });
+                        
+                        // Μεγάλο κόκκινο κύβο για δοκιμή
+                        testEntity.setAttribute('geometry', {
+                            primitive: 'box',
+                            width: 20,
+                            height: 20,
+                            depth: 20
+                        });
+                        testEntity.setAttribute('material', {
+                            color: '#ff0000',
+                            emissive: '#ff0000',
+                            emissiveIntensity: 0.5
+                        });
+                        
+                        // Animation
+                        testEntity.setAttribute('animation', {
+                            property: 'rotation',
+                            to: '360 360 0',
+                            dur: 4000,
+                            loop: true
+                        });
+                        
+                        // Label
+                        const testLabel = document.createElement('a-text');
+                        testLabel.setAttribute('value', 'TEST MARKER\n50m NORTH');
+                        testLabel.setAttribute('position', '0 15 0');
+                        testLabel.setAttribute('align', 'center');
+                        testLabel.setAttribute('color', '#ffffff');
+                        testLabel.setAttribute('scale', '15 15 15');
+                        testEntity.appendChild(testLabel);
+                        
+                        this.container.appendChild(testEntity);
+                        console.log('Test marker added at:', offsetLat, this.userPosition.longitude);
+                        this.showInfo('🔴 Test marker προστέθηκε 50m βόρεια από εσάς!');
+                    }
+                }, 3000); // 3 δευτερόλεπτα μετά το GPS lock
+            }
+
             showFeatureInfo(featureId) {
                 const feature = this.loadedFeatures.find(f => f.id === featureId);
                 if (!feature) return;
 
+                const coords = this.getFeatureCoordinates(feature);
+                let distance = 'N/A';
+                if (this.userPosition && coords) {
+                    distance = this.calculateDistance(
+                        this.userPosition.latitude, 
+                        this.userPosition.longitude,
+                        coords.lat, 
+                        coords.lng
+                    );
+                }
+
                 const info = `
                     <strong>${feature.properties.name}</strong><br>
                     Τύπος: ${feature.geometry.type}<br>
+                    Απόσταση: ${distance}m<br>
                     ${feature.properties.description || ''}
                 `;
                 
                 this.showInfo(info);
+            }
+
+            showCurrentLocation() {
+                if (this.userPosition) {
+                    const locationInfo = `
+                        <strong>📍 Η Θέση σας:</strong><br>
+                        Γ.Π.: ${this.userPosition.latitude.toFixed(6)}°<br>
+                        Γ.Μ.: ${this.userPosition.longitude.toFixed(6)}°<br>
+                        Ακρίβεια: ±${Math.round(this.userPosition.accuracy)}m<br><br>
+                        <strong>🎯 Στόχος (Θέρμη):</strong><br>
+                        Γ.Π.: 40.544953°<br>
+                        Γ.Μ.: 23.013282°<br><br>
+                        Απόσταση: ${this.calculateDistance(
+                            this.userPosition.latitude,
+                            this.userPosition.longitude,
+                            40.544953,
+                            23.013282
+                        )}m
+                    `;
+                    this.showInfo(locationInfo);
+                } else {
+                    this.showInfo('Αναμονή GPS...');
+                }
             }
 
             updateStatus(type, active, text) {
