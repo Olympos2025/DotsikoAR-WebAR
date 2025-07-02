@@ -611,10 +611,17 @@
                         console.log(`📁 Processing ${file.name}`);
                         const features = await this.parseKML(file);
                         
+                        console.log(`📄 Parsed features:`, features);
+                        
                         // Create AR objects for each feature
-                        features.forEach(feature => {
-                            this.createARObject(feature);
+                        let createdObjects = 0;
+                        features.forEach((feature, index) => {
+                            console.log(`🎯 Creating AR object ${index + 1}/${features.length}:`, feature);
+                            const success = this.createARObject(feature);
+                            if (success) createdObjects++;
                         });
+                        
+                        console.log(`✅ Created ${createdObjects}/${features.length} AR objects`);
                         
                         this.features.push(...features);
                         totalFeatures += features.length;
@@ -628,7 +635,12 @@
                     }
 
                     if (totalFeatures > 0) {
-                        this.showInfo(`✅ Φορτώθηκαν ${totalFeatures} στοιχεία! Στρέψτε την κάμερα προς την περιοχή για να τα δείτε.`);
+                        const objectsCount = this.container.children.length;
+                        this.showInfo(`✅ Φορτώθηκαν ${totalFeatures} στοιχεία! Δημιουργήθηκαν ${objectsCount} AR objects. Στρέψτε την κάμερα προς την περιοχή για να τα δείτε.`);
+                        
+                        // Force a scene refresh
+                        console.log('🔄 Forcing scene refresh...');
+                        this.scene.components.arjs.tickEnabled = true;
                     } else {
                         this.showError('Δεν βρέθηκαν έγκυρα γεωγραφικά στοιχεία στα αρχεία KML');
                     }
@@ -752,63 +764,113 @@
 
             createARObject(feature) {
                 if (!feature.geometry || !feature.geometry.coordinates) {
-                    console.warn('Feature missing geometry:', feature);
-                    return;
+                    console.warn('❌ Feature missing geometry:', feature);
+                    return false;
                 }
+
+                console.log(`🎯 Creating AR object for feature:`, feature);
 
                 const entity = document.createElement('a-entity');
                 entity.setAttribute('class', 'ar-object');
                 
                 // Get position for the object
                 let position;
-                switch (feature.geometry.type) {
-                    case 'Point':
-                        position = {
-                            lat: feature.geometry.coordinates[1],
-                            lng: feature.geometry.coordinates[0],
-                            alt: feature.geometry.coordinates[2] || 0
-                        };
-                        break;
-                    case 'LineString':
-                        // Use midpoint
-                        const coords = feature.geometry.coordinates;
-                        const midIndex = Math.floor(coords.length / 2);
-                        position = {
-                            lat: coords[midIndex][1],
-                            lng: coords[midIndex][0],
-                            alt: coords[midIndex][2] || 0
-                        };
-                        break;
-                    case 'Polygon':
-                        // Calculate centroid
-                        const ring = feature.geometry.coordinates[0];
-                        let latSum = 0, lngSum = 0, altSum = 0;
-                        ring.forEach(coord => {
-                            lngSum += coord[0];
-                            latSum += coord[1];
-                            altSum += coord[2] || 0;
-                        });
-                        position = {
-                            lat: latSum / ring.length,
-                            lng: lngSum / ring.length,
-                            alt: altSum / ring.length
-                        };
-                        break;
-                    default:
-                        console.warn('Unsupported geometry type:', feature.geometry.type);
-                        return;
+                try {
+                    switch (feature.geometry.type) {
+                        case 'Point':
+                            position = {
+                                lat: feature.geometry.coordinates[1],
+                                lng: feature.geometry.coordinates[0],
+                                alt: feature.geometry.coordinates[2] || 0
+                            };
+                            break;
+                        case 'LineString':
+                            // Use midpoint
+                            const coords = feature.geometry.coordinates;
+                            const midIndex = Math.floor(coords.length / 2);
+                            position = {
+                                lat: coords[midIndex][1],
+                                lng: coords[midIndex][0],
+                                alt: coords[midIndex][2] || 0
+                            };
+                            break;
+                        case 'Polygon':
+                            // Calculate centroid
+                            const ring = feature.geometry.coordinates[0];
+                            let latSum = 0, lngSum = 0, altSum = 0;
+                            ring.forEach(coord => {
+                                lngSum += coord[0];
+                                latSum += coord[1];
+                                altSum += coord[2] || 0;
+                            });
+                            position = {
+                                lat: latSum / ring.length,
+                                lng: lngSum / ring.length,
+                                alt: altSum / ring.length
+                            };
+                            break;
+                        default:
+                            console.warn('❌ Unsupported geometry type:', feature.geometry.type);
+                            return false;
+                    }
+                } catch (error) {
+                    console.error('❌ Error calculating position for feature:', error);
+                    return false;
                 }
+
+                if (!position || isNaN(position.lat) || isNaN(position.lng)) {
+                    console.error('❌ Invalid position calculated:', position);
+                    return false;
+                }
+
+                console.log(`📍 AR object position:`, position);
 
                 // Set GPS position
                 entity.setAttribute('gps-new-entity-place', `latitude: ${position.lat}; longitude: ${position.lng}; altitude: ${position.alt}`);
 
                 // Create visual representation
-                this.createVisualForFeature(entity, feature);
+                try {
+                    this.createVisualForFeature(entity, feature);
+                } catch (error) {
+                    console.error('❌ Error creating visual for feature:', error);
+                    return false;
+                }
 
                 // Add to scene
-                this.container.appendChild(entity);
-                
-                console.log(`🎯 Created AR object for ${feature.properties.name} at ${position.lat}, ${position.lng}`);
+                try {
+                    this.container.appendChild(entity);
+                    
+                    // Calculate distance from user if available
+                    let distance = 'Unknown';
+                    if (this.userPosition) {
+                        distance = this.calculateDistance(
+                            this.userPosition.latitude, this.userPosition.longitude,
+                            position.lat, position.lng
+                        );
+                        console.log(`📏 Distance to AR object: ${distance}m`);
+                    }
+                    
+                    console.log(`✅ AR object created successfully for ${feature.properties.name || 'Unnamed'} at ${position.lat}, ${position.lng} (${distance}m away)`);
+                    return true;
+                } catch (error) {
+                    console.error('❌ Error adding AR object to scene:', error);
+                    return false;
+                }
+            }
+
+            calculateDistance(lat1, lng1, lat2, lng2) {
+                const R = 6371e3; // Earth's radius in meters
+                const φ1 = lat1 * Math.PI/180;
+                const φ2 = lat2 * Math.PI/180;
+                const Δφ = (lat2-lat1) * Math.PI/180;
+                const Δλ = (lng2-lng1) * Math.PI/180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                return Math.round(R * c);
             }
 
             createVisualForFeature(entity, feature) {
