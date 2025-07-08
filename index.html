@@ -396,7 +396,7 @@
         
         <a-camera 
             id="ar-camera"
-            gps-new-camera="gpsMinDistance: 5; gpsMaxDistance: 20000; positionMinAccuracy: 100; alert: false; smoothingFactor: 0.1;"
+            gps-new-camera="gpsMinDistance: 1; gpsMaxDistance: 1000; positionMinAccuracy: 50; alert: false; smoothingFactor: 0.3;"
             look-controls="enabled: false"
             wasd-controls="enabled: false"
             cursor="rayOrigin: mouse">
@@ -491,8 +491,8 @@
 
                 const options = {
                     enableHighAccuracy: true,
-                    timeout: 30000,
-                    maximumAge: 10000
+                    timeout: 15000,
+                    maximumAge: 5000
                 };
 
                 // Watch position
@@ -637,9 +637,6 @@
                     if (totalFeatures > 0) {
                         const objectsCount = this.container.children.length;
                         this.showInfo(`✅ Φορτώθηκαν ${totalFeatures} στοιχεία! Δημιουργήθηκαν ${objectsCount} AR objects. Στρέψτε την κάμερα προς την περιοχή για να τα δείτε.`);
-                        
-                        // Force a scene refresh
-                        console.log('🔄 Forcing scene refresh...');
                     } else {
                         this.showError('Δεν βρέθηκαν έγκυρα γεωγραφικά στοιχεία στα αρχεία KML');
                     }
@@ -769,92 +766,120 @@
 
                 console.log(`🎯 Creating AR object for feature:`, feature);
 
+                const name = feature.properties.name || 'Unnamed';
+                
+                // Handle different geometry types
+                switch (feature.geometry.type) {
+                    case 'Point':
+                        return this.createPointObject(feature);
+                    case 'LineString':
+                        return this.createLineStringObject(feature);
+                    case 'Polygon':
+                        return this.createPolygonObject(feature);
+                    default:
+                        console.warn('❌ Unsupported geometry type:', feature.geometry.type);
+                        return false;
+                }
+            }
+
+            createPointObject(feature) {
+                const [lng, lat, alt] = feature.geometry.coordinates;
+                const name = feature.properties.name || 'Point';
+                
                 const entity = document.createElement('a-entity');
                 entity.setAttribute('class', 'ar-object');
+                entity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lng}; altitude: ${alt || 0}`);
                 
-                // Get position for the object
-                let position;
-                try {
-                    switch (feature.geometry.type) {
-                        case 'Point':
-                            position = {
-                                lat: feature.geometry.coordinates[1],
-                                lng: feature.geometry.coordinates[0],
-                                alt: feature.geometry.coordinates[2] || 0
-                            };
-                            break;
-                        case 'LineString':
-                            // Use midpoint
-                            const coords = feature.geometry.coordinates;
-                            const midIndex = Math.floor(coords.length / 2);
-                            position = {
-                                lat: coords[midIndex][1],
-                                lng: coords[midIndex][0],
-                                alt: coords[midIndex][2] || 0
-                            };
-                            break;
-                        case 'Polygon':
-                            // Calculate centroid
-                            const ring = feature.geometry.coordinates[0];
-                            let latSum = 0, lngSum = 0, altSum = 0;
-                            ring.forEach(coord => {
-                                lngSum += coord[0];
-                                latSum += coord[1];
-                                altSum += coord[2] || 0;
-                            });
-                            position = {
-                                lat: latSum / ring.length,
-                                lng: lngSum / ring.length,
-                                alt: altSum / ring.length
-                            };
-                            break;
-                        default:
-                            console.warn('❌ Unsupported geometry type:', feature.geometry.type);
-                            return false;
+                // Create sphere
+                entity.setAttribute('geometry', 'primitive: sphere; radius: 3');
+                entity.setAttribute('material', 'color: #ff4444; emissive: #ff2222; emissiveIntensity: 0.5');
+                
+                // Add label
+                const text = document.createElement('a-text');
+                text.setAttribute('value', name);
+                text.setAttribute('position', '0 6 0');
+                text.setAttribute('align', 'center');
+                text.setAttribute('color', '#ffffff');
+                text.setAttribute('scale', '8 8 8');
+                text.setAttribute('material', 'color: #ffffff; shader: msdf');
+                entity.appendChild(text);
+                
+                this.container.appendChild(entity);
+                return true;
+            }
+
+            createLineStringObject(feature) {
+                const coords = feature.geometry.coordinates;
+                const name = feature.properties.name || 'Line';
+                
+                // Create objects at each vertex of the line
+                coords.forEach((coord, index) => {
+                    const [lng, lat, alt] = coord;
+                    
+                    const entity = document.createElement('a-entity');
+                    entity.setAttribute('class', 'ar-object');
+                    entity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lng}; altitude: ${alt || 0}`);
+                    
+                    // Create cylinder
+                    entity.setAttribute('geometry', 'primitive: cylinder; radius: 1; height: 6');
+                    entity.setAttribute('material', 'color: #4444ff; emissive: #2222ff; emissiveIntensity: 0.5');
+                    
+                    // Add label for first vertex
+                    if (index === 0) {
+                        const text = document.createElement('a-text');
+                        text.setAttribute('value', name);
+                        text.setAttribute('position', '0 6 0');
+                        text.setAttribute('align', 'center');
+                        text.setAttribute('color', '#ffffff');
+                        text.setAttribute('scale', '6 6 6');
+                        text.setAttribute('material', 'color: #ffffff; shader: msdf');
+                        entity.appendChild(text);
                     }
-                } catch (error) {
-                    console.error('❌ Error calculating position for feature:', error);
-                    return false;
-                }
-
-                if (!position || isNaN(position.lat) || isNaN(position.lng)) {
-                    console.error('❌ Invalid position calculated:', position);
-                    return false;
-                }
-
-                console.log(`📍 AR object position:`, position);
-
-                // Set GPS position
-                entity.setAttribute('gps-new-entity-place', `latitude: ${position.lat}; longitude: ${position.lng}; altitude: ${position.alt}`);
-
-                // Create visual representation
-                try {
-                    this.createVisualForFeature(entity, feature);
-                } catch (error) {
-                    console.error('❌ Error creating visual for feature:', error);
-                    return false;
-                }
-
-                // Add to scene
-                try {
+                    
                     this.container.appendChild(entity);
+                });
+                
+                return true;
+            }
+
+            createPolygonObject(feature) {
+                const ring = feature.geometry.coordinates[0]; // Outer ring
+                const name = feature.properties.name || 'Polygon';
+                
+                // Create objects at each vertex of the polygon
+                ring.forEach((coord, index) => {
+                    const [lng, lat, alt] = coord;
                     
-                    // Calculate distance from user if available
-                    let distance = 'Unknown';
-                    if (this.userPosition) {
-                        distance = this.calculateDistance(
-                            this.userPosition.latitude, this.userPosition.longitude,
-                            position.lat, position.lng
-                        );
-                        console.log(`📏 Distance to AR object: ${distance}m`);
+                    // Skip the last coordinate if it's the same as the first (closed polygon)
+                    if (index === ring.length - 1 && 
+                        ring[0][0] === lng && ring[0][1] === lat) {
+                        return;
                     }
                     
-                    console.log(`✅ AR object created successfully for ${feature.properties.name || 'Unnamed'} at ${position.lat}, ${position.lng} (${distance}m away)`);
-                    return true;
-                } catch (error) {
-                    console.error('❌ Error adding AR object to scene:', error);
-                    return false;
-                }
+                    const entity = document.createElement('a-entity');
+                    entity.setAttribute('class', 'ar-object');
+                    entity.setAttribute('gps-new-entity-place', `latitude: ${lat}; longitude: ${lng}; altitude: ${alt || 0}`);
+                    
+                    // Create box for polygon vertices
+                    entity.setAttribute('geometry', 'primitive: box; width: 4; height: 4; depth: 4');
+                    entity.setAttribute('material', 'color: #44ff44; emissive: #22ff22; emissiveIntensity: 0.5');
+                    
+                    // Add label for first vertex
+                    if (index === 0) {
+                        const text = document.createElement('a-text');
+                        text.setAttribute('value', name);
+                        text.setAttribute('position', '0 6 0');
+                        text.setAttribute('align', 'center');
+                        text.setAttribute('color', '#ffffff');
+                        text.setAttribute('scale', '6 6 6');
+                        text.setAttribute('material', 'color: #ffffff; shader: msdf');
+                        entity.appendChild(text);
+                    }
+                    
+                    this.container.appendChild(entity);
+                });
+                
+                return true;
             }
 
             calculateDistance(lat1, lng1, lat2, lng2) {
@@ -870,42 +895,6 @@
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
                 return Math.round(R * c);
-            }
-
-            createVisualForFeature(entity, feature) {
-                const type = feature.geometry.type;
-                const name = feature.properties.name || 'Unnamed';
-                
-                // Create geometry based on type
-                switch (type) {
-                    case 'Point':
-                        entity.setAttribute('geometry', 'primitive: sphere; radius: 5');
-                        entity.setAttribute('material', 'color: #ff4444; emissive: #ff2222; emissiveIntensity: 0.3');
-                        break;
-                    case 'LineString':
-                        entity.setAttribute('geometry', 'primitive: cylinder; radius: 2; height: 20');
-                        entity.setAttribute('material', 'color: #4444ff; emissive: #2222ff; emissiveIntensity: 0.3');
-                        break;
-                    case 'Polygon':
-                        entity.setAttribute('geometry', 'primitive: plane; width: 30; height: 30');
-                        entity.setAttribute('material', 'color: #44ff44; opacity: 0.7; transparent: true; side: double');
-                        entity.setAttribute('rotation', '-90 0 0');
-                        break;
-                }
-
-                // Add text label
-                const text = document.createElement('a-text');
-                text.setAttribute('value', name);
-                text.setAttribute('position', '0 15 0');
-                text.setAttribute('align', 'center');
-                text.setAttribute('color', '#ffffff');
-                text.setAttribute('scale', '15 15 15');
-                text.setAttribute('material', 'color: #ffffff; shader: msdf');
-                
-                entity.appendChild(text);
-
-                // Add animation
-                entity.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000');
             }
 
             clearAll() {
