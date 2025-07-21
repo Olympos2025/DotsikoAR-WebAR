@@ -492,33 +492,70 @@
 
             // Camera ready detection
             this.scene.addEventListener('loaded', () => {
+                console.log('📹 Scene loaded, checking camera...');
                 setTimeout(() => {
-                    this.updateStatus('camera', true, 'Κάμερα: Ενεργή');
-                }, 2000);
+                    // Check if camera stream is active
+                    const video = document.querySelector('video');
+                    if (video && video.videoWidth > 0) {
+                        console.log('✅ Camera stream active');
+                        this.updateStatus('camera', true, 'Κάμερα: Ενεργή');
+                    } else {
+                        console.log('❌ Camera stream not detected');
+                        this.updateStatus('camera', false, 'Κάμερα: Σφάλμα');
+                    }
+                }, 3000);
+            });
+
+            // Listen for camera permission events
+            this.scene.addEventListener('camera-init', () => {
+                console.log('📹 Camera initializing...');
+                this.updateStatus('camera', false, 'Κάμερα: Αρχικοποίηση...');
+            });
+
+            this.scene.addEventListener('camera-error', (event) => {
+                console.error('❌ Camera error:', event);
+                this.updateStatus('camera', false, 'Κάμερα: Σφάλμα');
+                this.showError('Σφάλμα κάμερας. Παρακαλώ ελέγξτε τις άδειες στις ρυθμίσεις του Safari.');
             });
         }
 
-        initLocationServices() {
+        async initLocationServices() {
             if (!navigator.geolocation) {
                 this.updateStatus('gps', false, 'GPS: Μη διαθέσιμο');
                 this.showError('GPS δεν υποστηρίζεται σε αυτή τη συσκευή');
                 return;
             }
 
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 30000,
-                maximumAge: 10000
-            };
+            // Request permission first
+            try {
+                console.log('📍 Requesting GPS permission...');
+                this.updateStatus('gps', false, 'GPS: Αίτηση άδειας...');
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 5000
+                };
 
-            // Watch position
-            this.gpsWatchId = navigator.geolocation.watchPosition(
-                (position) => this.handleGPSSuccess(position),
-                (error) => this.handleGPSError(error),
-                options
-            );
+                // Get position once to trigger permission
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+                });
+                
+                console.log('✅ GPS permission granted, starting watch...');
+                this.handleGPSSuccess(position);
+                
+                // Now start watching
+                this.gpsWatchId = navigator.geolocation.watchPosition(
+                    (position) => this.handleGPSSuccess(position),
+                    (error) => this.handleGPSError(error),
+                    options
+                );
 
-            console.log('📍 GPS watch started');
+            } catch (error) {
+                console.error('❌ GPS permission error:', error);
+                this.handleGPSError(error);
+            }
         }
 
         handleGPSSuccess(position) {
@@ -562,26 +599,34 @@
             this.updateStatus('gps', false, message);
         }
 
-        initOrientation() {
+        async initOrientation() {
+            console.log('🧭 Initializing orientation...');
+            this.updateStatus('orientation', false, 'Προσανατολισμός: Αίτηση...');
+            
             // Request permission for iOS 13+
             if (typeof DeviceOrientationEvent !== 'undefined' && 
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 
-                DeviceOrientationEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            this.setupOrientationListeners();
-                        } else {
-                            this.updateStatus('orientation', false, 'Προσανατολισμός: Απορρίφθηκε');
-                            this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στον προσανατολισμό συσκευής');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Orientation permission error:', error);
-                        this.updateStatus('orientation', false, 'Προσανατολισμός: Σφάλμα');
-                    });
+                try {
+                    console.log('📱 Requesting iOS orientation permission...');
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    
+                    if (response === 'granted') {
+                        console.log('✅ iOS orientation permission granted');
+                        this.setupOrientationListeners();
+                    } else {
+                        console.error('❌ iOS orientation permission denied');
+                        this.updateStatus('orientation', false, 'Προσανατολισμός: Απορρίφθηκε');
+                        this.showError('Παρακαλώ επιτρέψτε την πρόσβαση στον προσανατολισμό συσκευής στις ρυθμίσεις του Safari');
+                    }
+                } catch (error) {
+                    console.error('❌ Orientation permission error:', error);
+                    this.updateStatus('orientation', false, 'Προσανατολισμός: Σφάλμα');
+                    this.showError(`Σφάλμα προσανατολισμού: ${error.message}`);
+                }
             } else {
                 // Android or older iOS
+                console.log('🤖 Android/older iOS - setting up orientation listeners');
                 this.setupOrientationListeners();
             }
         }
@@ -1198,15 +1243,65 @@
 
     // Handle device orientation permission on user interaction
     let permissionRequested = false;
-    function requestPermissions() {
+    async function requestPermissions() {
         if (permissionRequested) return;
         permissionRequested = true;
         
-        if (typeof DeviceOrientationEvent !== 'undefined' && 
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
+        console.log('🔐 User interaction detected, requesting permissions...');
+        
+        try {
+            // Request orientation permission
+            if (typeof DeviceOrientationEvent !== 'undefined' && 
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                
+                console.log('📱 Requesting iOS permissions...');
+                await DeviceOrientationEvent.requestPermission();
+            }
             
-            DeviceOrientationEvent.requestPermission().catch(console.error);
+            // Also request motion permission if available
+            if (typeof DeviceMotionEvent !== 'undefined' && 
+                typeof DeviceMotionEvent.requestPermission === 'function') {
+                
+                await DeviceMotionEvent.requestPermission();
+            }
+            
+            console.log('✅ Permissions requested');
+            
+        } catch (error) {
+            console.error('❌ Permission request failed:', error);
         }
+    }
+
+    // Add permission button for iOS
+    function addPermissionButton() {
+        const permissionBtn = document.createElement('button');
+        permissionBtn.textContent = '🔐 Ενεργοποίηση Αισθητήρων';
+        permissionBtn.className = 'btn btn-success';
+        permissionBtn.style.position = 'fixed';
+        permissionBtn.style.top = '50%';
+        permissionBtn.style.left = '50%';
+        permissionBtn.style.transform = 'translate(-50%, -50%)';
+        permissionBtn.style.zIndex = '10001';
+        permissionBtn.style.padding = '15px 25px';
+        permissionBtn.style.fontSize = '16px';
+        
+        permissionBtn.onclick = async () => {
+            await requestPermissions();
+            permissionBtn.remove();
+            
+            // Restart the app
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        };
+        
+        document.body.appendChild(permissionBtn);
+    }
+
+    // Check if iOS and add permission button
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+        setTimeout(addPermissionButton, 2000);
     }
 
     document.addEventListener('click', requestPermissions, { once: true });
